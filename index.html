@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html vocab="http://schema.org" lang="ja">
+<head>
+  <title>Three.jsによる馬のアニメーション</title>
+  <meta charset="utf-8" />
+  <meta name="description" content="SVGアニメーションのテスト" />
+  <meta name="keywords" content="Youtube,d3.js,Q.js,jquery" />
+  <meta name="author" content="sfpgmr" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/q.js/1.1.2/q.min.js"></script>
+  <script type="text/javascript" src="pathSerializer.js"></script>
+  <script type="text/javascript" src="svgToPath.js"></script>
+  <script type="text/javascript" src="AudioAnalyser.js"></script>
+  <script type="text/javascript" src="dsp.js"></script>
+  <!--<script type="text/javascript" src="./graphics.js"></script> -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    #svg {
+      display: none;
+    }
+  </style>
+
+</head>
+<body>
+  <div id="content"></div>
+  <div id="svg"></div>
+  <div id="svgcell"></div>
+  <script type="text/javascript" src="index.js"></script>
+</body>
+</html>
