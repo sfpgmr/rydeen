@@ -20,9 +20,6 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js" />
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js" />
-/// <reference path="..\intellisense\q.intellisense.js" />
 /// <reference path="dsp.js" />
 /// <reference path="pathSerializer.js" />
 // リリース時にはコメントアウトすること
@@ -30,6 +27,9 @@
 //':35729/livereload.js?snipver=2"></' + 'script>');
 
 var fs = require('fs');
+var denodeify = require('./denodeify'); 
+var readFile = denodeify(fs.readFile);
+var writeFile = denodeify(fs.writeFile); 
 
 // from gist
 // https://gist.github.com/gabrielflorit/3758456
@@ -54,8 +54,8 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
 // メイン
 window.addEventListener('load', function () {
 
-  var preview = window.location.search.match(/preview/ig);
-  var WIDTH = window.innerWidth, HEIGHT = window.innerHeight;
+  var preview = false;//window.location.search.match(/preview/ig);
+  var WIDTH = 1920, HEIGHT = 1080;
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
@@ -71,74 +71,79 @@ window.addEventListener('load', function () {
   var scene = new THREE.Scene();
 
   // カメラの作成
-  var camera = new THREE.PerspectiveCamera(90.0, WIDTH / HEIGHT);
-  camera.position.x = 0.0;
-  camera.position.y = 0.0;
-  camera.position.z = (WIDTH / 2.0) * HEIGHT / WIDTH;
-  camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
+  // var camera = new THREE.PerspectiveCamera(90.0, WIDTH / HEIGHT);
+  // camera.position.x = 0.0;
+  // camera.position.y = 0.0;
+  // camera.position.z = (WIDTH / 2.0) * HEIGHT / WIDTH;
+  // camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
+  camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
+  camera.position.z = 1000;
+  camera.position.x = 0;
+  camera.target = new THREE.Vector3( 0, 0, 0 );
 
-  var horseGroups = [];
-  window.addEventListener('resize', function () {
-    WIDTH = window.innerWidth;
-    HEIGHT = window.innerHeight;
-    renderer.setSize(WIDTH, HEIGHT);
-    camera.aspect = WIDTH / HEIGHT;
-    camera.position.z = (WIDTH / 2.0) * HEIGHT / WIDTH;
-    camera.updateProjectionMatrix();
-  });
+  var light = new THREE.DirectionalLight( 0xefefff, 1.5 );
+  light.position.set( 1, 1, 1 ).normalize();
+  scene.add( light );
+
+  var light = new THREE.DirectionalLight( 0xffefef, 1.5 );
+  light.position.set( -1, -1, -1 ).normalize();
+  scene.add( light );
+
+  var loader = new THREE.JSONLoader();
+  var horseAnimSpeed = (60.0 / (143.0));
+
+  loader.load( "./horse.json", function( geometry ) {
+
+    mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
+      vertexColors: THREE.FaceColors,
+      morphTargets: true
+    } ) );
+    mesh.scale.set( 1.5, 1.5, 1.5 );
+    mesh.rotation.y = 0.5 * Math.PI;
+    mesh.position.y = -100;
+    scene.add( mesh );
+
+    mixer = new THREE.AnimationMixer( mesh );
+
+    var clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets, 30 );
+    mixer.clipAction( clip ).setDuration( horseAnimSpeed ).play();
+
+  } );
+
+//   var horseGroups = [];
+//   window.addEventListener('resize', function () {
+// //    WIDTH = window.innerWidth;
+// //    HEIGHT = window.innerHeight;
+//     // renderer.setSize(WIDTH, HEIGHT);
+//     // camera.aspect = WIDTH / HEIGHT;
+//     // camera.position.z = (WIDTH / 2.0) * HEIGHT / WIDTH;
+//     // camera.updateProjectionMatrix();
+//   });
 
 
-  var gto;
-  try {
-    var shapes = [];
-    for (var i = 0; i < 11; ++i) {
-      var id = 'horse' + ('0' + i).slice(-2);
-      var path = fs.readFileSync('./media/' + id + '.json', 'utf-8');
-      // デシリアライズ
-      shape = SF.deserialize(JSON.parse(path)).toShapes();
-      var shapeGeometry = new THREE.ShapeGeometry(shape);
-      shapes.push({ name: id, shape: shapeGeometry });
-    }
+  // var gto;
+  // try {
 
-    var ggroup = new THREE.Group();
-    for (var i = 0; i < 1; ++i) {
-      var group = new THREE.Group();
-      shapes.forEach(function (sm) {
-        var shapeMesh = createShape(sm.shape, 0xFFFF00, 0, 0, 0, 0, 0, 0, 1.0);
-        shapeMesh.visible = false;
-        shapeMesh.name = sm.name;
-        group.add(shapeMesh);
-      });
-      group.position.x = 0;
-      group.position.y = 0;
-      //        group.position.z = 2000.0 * Math.random() - 1000.0;
-      horseGroups.push(group);
-      ggroup.add(group);
-    }
-    scene.add(ggroup);
-    ggroup.name = 'world';
-
-    d3.select('#svg').remove();
-  } catch (e) {
-    console.log(e + '\n' + e.stack);
-  }
+  // } catch (e) {
+  //   console.log(e + '\n' + e.stack);
+  // }
 
   // FFT表示用テクスチャ
 
-  var canvas = document.createElement('canvas');
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
-  var ctx = canvas.getContext('2d');
-  ctx.fillStyle = "rgba(0,0,0,0.0)";
-  ctx.clearRect(0,0,WIDTH,HEIGHT);
-  var ffttexture = new THREE.Texture(canvas);
-  ffttexture.needsUpdate = true;
-  var fftgeometry = new THREE.PlaneBufferGeometry(WIDTH,HEIGHT);
-  var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture,transparent:true});
-  var fftmesh = new THREE.Mesh(fftgeometry,fftmaterial);
-  fftmesh.position.z = 0.00;
+  // var canvas = document.createElement('canvas');
+  // canvas.width = WIDTH;
+  // canvas.height = HEIGHT;
+  // var ctx = canvas.getContext('2d');
+  // ctx.fillStyle = "rgba(0,0,0,0.0)";
+  // ctx.clearRect(0,0,WIDTH,HEIGHT);
+  // var ffttexture = new THREE.Texture(canvas);
+  // ffttexture.needsUpdate = true;
+  // var fftgeometry = new THREE.PlaneBufferGeometry(2048,2048);
+  // var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture,transparent:true});
+  // var fftmesh = new THREE.Mesh(fftgeometry,fftmaterial);
+  // fftmesh.position.z = 0.00;
 
-  scene.add(fftmesh);
+  // scene.add(fftmesh);
 
   //レンダリング
   var r = 0.0;
@@ -147,7 +152,6 @@ window.addEventListener('load', function () {
   var fft = new FFT(fftsize, 48000);
   var waveCount = 0;
   var index = 0;
-  var horseAnimSpeed = (60.0 / (143.0 * 11.0));
   var time = 0.0;
   var frameNo = 0;
   var endTime = 60.0 * 4.0 + 35.0;
@@ -156,6 +160,7 @@ window.addEventListener('load', function () {
   var previewCount = 0;
   var chR;
   var chL;
+  var prevTime = Date.now();
   
   function renderToFile(preview) {
     if (preview) {
@@ -181,20 +186,10 @@ window.addEventListener('load', function () {
       return;
     }
     ++frameNo;
-    var idx = parseInt(index,10);
-    for (var i = 0, end = horseGroups.length; i < end; ++i) {
-      var g = horseGroups[i];
-      g.getObjectByName('horse' + ('00' + idx.toString(10)).slice(-2)).visible = true;
-      if (idx == 0) {
-        g.getObjectByName('horse10').visible = false;
-      } else {
-        g.getObjectByName('horse' + ('00' + (idx - 1).toString(10)).slice(-2)).visible = false;
-      }
-    }   
 
-    ctx.fillStyle = 'rgba(0,0,0,0.0)';
-    ctx.clearRect(0,0,WIDTH,HEIGHT);
-    ctx.fillStyle = 'rgba(255,0,0,0.5)';
+    // ctx.fillStyle = 'rgba(0,0,0,0.0)';
+    // ctx.clearRect(0,0,WIDTH,HEIGHT);
+    // ctx.fillStyle = 'rgba(255,0,0,0.5)';
 
     // fft.forward(chR.subarray(waveCount,waveCount + fftsize));
     // var spectrum = fft.real;
@@ -210,13 +205,17 @@ window.addEventListener('load', function () {
     // }
 
     waveCount += step;
-    if(waveCount > chR.length){
-      if(parent){
-        parent.postMessage("end");
-      }
+    if(waveCount >= chR.length){
       window.close();
     }
-    ffttexture.needsUpdate =true;
+    //ffttexture.needsUpdate =true;
+
+    var time = Date.now();
+    camera.lookAt( camera.target );
+
+    mixer.update( ( time - prevTime ) * 0.001 );
+
+    prevTime = time;
 
     renderer.render(scene, camera);
 
@@ -225,14 +224,14 @@ window.addEventListener('load', function () {
       var data = d3.select('#console').node().toDataURL('image/png');
       data = data.substr(data.indexOf(',') + 1);
       var buffer = new Buffer(data, 'base64');
-      Q.nfcall(fs.writeFile, './temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png', buffer, 'binary')
-      .then(renderToFile)
+      writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png', buffer, 'binary')
+      .then(renderToFile.bind(this,preview))
       .catch(function(e){
         console.log(err);
       });
     } else {
       // プレビュー
-      requestAnimationFrame(renderToFile.bind(renderToFile, true));
+      requestAnimationFrame(renderToFile.bind(null, preview));
     }
   }
 
@@ -255,7 +254,7 @@ window.addEventListener('load', function () {
   SF.Audio.load().then(function () {
     chL = SF.Audio.source.buffer.getChannelData(0);
     chR = SF.Audio.source.buffer.getChannelData(1);
-    renderToFile(preview);
+    renderToFile(false);
   }).catch(function (e) {
     console.log(e);
   });

@@ -27,7 +27,7 @@
 
 //(function(){
 //})();
-
+var denodeify = require('./denodeify');
 
 (function (grobal){
   var fs = require('fs');
@@ -50,17 +50,17 @@
         , rseg = path[rcmd].apply(path, args);
       segs.replaceItem(rseg, i);
     }
-    var dx, dy, x0, y0, x1, y1, x2, y2, segs = path.pathSegList;
-    for (var x = 0, y = 0, i = 0, len = segs.numberOfItems; i < len; i++) {
-      var seg = segs.getItem(i)
+    var dx, dy, x0, y0, x1, y1, x2, y2, segs = path.getPathData();
+    for (var x = 0, y = 0, i = 0, len = segs.length; i < len; i++) {
+      var seg = segs[i]
         , c   = seg.pathSegTypeAsLetter;
       if (/[MLHVCSQTAZz]/.test(c)) {
-        if ('x1' in seg) x1 = seg.x1 - x;
-        if ('x2' in seg) x2 = seg.x2 - x;
-        if ('y1' in seg) y1 = seg.y1 - y;
-        if ('y2' in seg) y2 = seg.y2 - y;
-        if ('x'  in seg) dx = -x + (x = seg.x);
-        if ('y'  in seg) dy = -y + (y = seg.y);
+        if ('x1' in seg) x1 = seg.values[2] - x;
+        if ('x2' in seg) x2 = seg.values[3] - x;
+        if ('y1' in seg) y1 = seg.values[4] - y;
+        if ('y2' in seg) y2 = seg.values[5] - y;
+        if ('x'  in seg) dx = -x + (x = seg.values[0]);
+        if ('y'  in seg) dy = -y + (y = seg.values[1]);
         switch (c) {
           case 'M': set('Moveto',dx,dy);                   break;
           case 'L': set('Lineto',dx,dy);                   break;
@@ -76,8 +76,8 @@
         }
       }
       else {
-        if ('x' in seg) x += seg.x;
-        if ('y' in seg) y += seg.y;
+        if ('x' in seg) x += seg.values[0];
+        if ('y' in seg) y += seg.values[1];
       }
       // store the start of a subpath
       if (c == 'M' || c == 'm') {
@@ -317,7 +317,7 @@
     return path;
   }
 
-  var xml = Q.nfbind(d3.xml);
+  var xml = denodeify(d3.xml);
   var gto;
   if(!fs.existsSync('./cached.txt')){
   // SVGファイルから馬のメッシュを作る
@@ -337,13 +337,19 @@
       paths.each(function(){
         // 馬セルの取り出しと座標補正
         var path = d3.select(this);
-        console.log(path.node().pathSegList.getItem(0).x);
+        var pathData = path.node().getPathData();
+        console.log(pathData[0].values[0]);
         convertToRelative(path.node());
-        var m = path.node().createSVGPathSegMovetoRel
-                (path.node().pathSegList.getItem(0).x - boundingBox.x.baseVal.value - boundingBox.width.baseVal.value / 2.0,
-                path.node().pathSegList.getItem(0).y - boundingBox.y.baseVal.value - boundingBox.height.baseVal.value / 2.0
-                );
-        path.node().pathSegList.replaceItem(m,0);
+        pathData[0].type = 'm';
+        pathData[0].values[0] = pathData[0].values[0] - boundingBox.x.baseVal.value - boundingBox.width.baseVal.value / 2.0;
+        pathData[0].values[1] = pathData[0].values[1] - boundingBox.y.baseVal.value - boundingBox.height.baseVal.value / 2.0;
+        path.node().setPathData(pathData);
+
+        // var m = path.node().createSVGPathSegMovetoRel
+        //         (path.node().pathSegList.getItem(0).x - boundingBox.x.baseVal.value - boundingBox.width.baseVal.value / 2.0,
+        //         path.node().pathSegList.getItem(0).y - boundingBox.y.baseVal.value - boundingBox.height.baseVal.value / 2.0
+        //         );
+        //path.node().pathSegList.replaceItem(m,0);
         path.attr('d',path.attr('d'));
         // svg pathからthree.js shapeへの変換
         var threePath = transformSVGPath(path.attr('d'));

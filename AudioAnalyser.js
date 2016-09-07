@@ -25,6 +25,9 @@
 /// <reference path="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js" />
 /// <reference path="../q.intellisense.js" />
 
+var denodeify = require('./denodeify');
+var fs = require('fs');
+var readFile = denodeify(fs.readFile);
 
 (function(global){
   if(!global.SF){
@@ -38,8 +41,6 @@
 
   function load(){
     var context = new AudioContext();
-    var fs = require('fs');
-    var defer = Q.defer();
 
     function toArrayBuffer(buffer) {
       var ab = new ArrayBuffer(buffer.length);
@@ -50,27 +51,28 @@
       return ab;
     }
 
-    Q.nfcall(fs.readFile,'./media/Rydeen.wav')
+   return  readFile('./media/Rydeen.wav')
     .then(function(data){
-      var arrayBuf = toArrayBuffer(data);
-      context.decodeAudioData(arrayBuf,function(buffer){
-        if(!buffer){
-          console.log('error');
-        }
-        var source = context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(context.destination);
-        var analyser = context.createAnalyser();
-        source.connect(analyser);
-        SF.Audio.context = context;
-        SF.Audio.analyser = analyser;
-        SF.Audio.source = source;
-        defer.resolve(source);
-      },function(err){
-        defer.reject(err);
+      return new Promise((resolve,reject)=>{
+        var arrayBuf = toArrayBuffer(data);
+        context.decodeAudioData(arrayBuf,function(buffer){
+          if(!buffer){
+            console.log('error');
+          }
+          var source = context.createBufferSource();
+          source.buffer = buffer;
+          source.connect(context.destination);
+          var analyser = context.createAnalyser();
+          source.connect(analyser);
+          SF.Audio.context = context;
+          SF.Audio.analyser = analyser;
+          SF.Audio.source = source;
+          resolve(source);
+        },function(err){
+          reject(err);
+        });
       });
     });
-    return defer.promise;
   }
   SF.Audio.load = load;
 })(window);
