@@ -77,8 +77,9 @@ window.addEventListener('load', function () {
   // camera.position.z = (WIDTH / 2.0) * HEIGHT / WIDTH;
   // camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
   camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
-  camera.position.z = 1000;
+  camera.position.z = 500;
   camera.position.x = 0;
+  camera.position.y = 1000;
   camera.target = new THREE.Vector3( 0, 0, 0 );
 
   var light = new THREE.DirectionalLight( 0xefefff, 1.5 );
@@ -91,22 +92,34 @@ window.addEventListener('load', function () {
 
   var loader = new THREE.JSONLoader();
   var horseAnimSpeed = (60.0 / (143.0));
+  var meshes = [];
+  var mixers = [];
+  var HORSE_NUM = 30;
 
   loader.load( "./horse.json", function( geometry ) {
 
-    mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
+    meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
       vertexColors: THREE.FaceColors,
       morphTargets: true
     } ) );
-    mesh.scale.set( 1.5, 1.5, 1.5 );
-    mesh.rotation.y = 0.5 * Math.PI;
-    mesh.position.y = -100;
-    scene.add( mesh );
+    meshes[0].scale.set( 1.5, 1.5, 1.5 );
+    meshes[0].rotation.y = 0.5 * Math.PI;
+    meshes[0].position.y = 0;
 
-    mixer = new THREE.AnimationMixer( mesh );
 
-    var clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets, 30 );
-    mixer.clipAction( clip ).setDuration( horseAnimSpeed ).play();
+    for(let i = 1;i < HORSE_NUM;++i){
+      meshes[i] = meshes[0].clone();
+      meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 200)) * 20;
+      meshes[i].position.z =  (Math.floor((Math.random() - 0.5) * 100)) * 20;
+      meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
+    }
+
+    for(let i = 0;i< HORSE_NUM;++i){
+      scene.add( meshes[i] );
+      mixers[i] = new THREE.AnimationMixer( meshes[i] );
+      let clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets, 30 );
+      mixers[i].clipAction( clip ).setDuration( horseAnimSpeed ).play();
+    }     
 
   } );
 
@@ -160,7 +173,9 @@ window.addEventListener('load', function () {
   var previewCount = 0;
   var chR;
   var chL;
-  var prevTime = Date.now();
+  var timer = 0;
+  var pchain = Promise.resolve(0);
+  var radius = 1000,theta = 0;
   
   function renderToFile(preview) {
     if (preview) {
@@ -210,12 +225,16 @@ window.addEventListener('load', function () {
     }
     //ffttexture.needsUpdate =true;
 
-    var time = Date.now();
     camera.lookAt( camera.target );
 
-    mixer.update( ( time - prevTime ) * 0.001 );
+    mixers.forEach((mixer)=>{
+      mixer.update(1 / 30);
+    });
 
-    prevTime = time;
+    camera.position.x = radius * Math.sin( theta );
+    camera.position.z = radius * Math.cos( theta );
+    theta += 0.01;
+	  camera.lookAt( camera.target );
 
     renderer.render(scene, camera);
 
@@ -232,6 +251,7 @@ window.addEventListener('load', function () {
     } else {
       // プレビュー
       requestAnimationFrame(renderToFile.bind(null, preview));
+      renderer.render(scene, camera);
     }
   }
 
