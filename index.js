@@ -53,8 +53,7 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
 
 // メイン
 window.addEventListener('load', function () {
-
-  var preview = false;//window.location.search.match(/preview/ig);
+  var preview = window.location.hash.match(/preview/ig) != null;
   var WIDTH = 1920, HEIGHT = 1080;
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
   renderer.setSize(WIDTH, HEIGHT);
@@ -96,32 +95,51 @@ window.addEventListener('load', function () {
   var mixers = [];
   var HORSE_NUM = 30;
 
-  loader.load( "./horse.json", function( geometry ) {
 
-    meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
-      vertexColors: THREE.FaceColors,
-      morphTargets: true
-    } ) );
-    meshes[0].scale.set( 1.5, 1.5, 1.5 );
-    meshes[0].rotation.y = 0.5 * Math.PI;
-    meshes[0].position.y = 0;
+  var loadHorseMesh = (()=>{
+    return new Promise((resolve,reject)=>{
+      loader.load( "./horse.json", ( geometry ) => {
+
+        // meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
+        //   vertexColors: THREE.FaceColors,
+        //   morphTargets: true
+        // } ) );
+        let mat = new THREE.MeshPhongMaterial( {
+         //  vertexColors: THREE.FaceColors,
+         // shading: THREE.SmoothShading,
+          morphTargets: true
+        } );
+        mat.color = new THREE.Color(0.0,1.0,0.0);
+        //mat.reflectivity = 1.0;
+        //mat.specular = new THREE.Color(0.5,0.5,0.5);
+        //mat.emissive = new THREE.Color(0.5,0,0);
+//        mat.wireframe = true;
+        meshes[0] = new THREE.Mesh( geometry, mat);
+        
+
+        meshes[0].scale.set( 1.5, 1.5, 1.5 );
+        meshes[0].rotation.y = 0.5 * Math.PI;
+        meshes[0].position.y = 0;
 
 
-    for(let i = 1;i < HORSE_NUM;++i){
-      meshes[i] = meshes[0].clone();
-      meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 200)) * 20;
-      meshes[i].position.z =  (Math.floor((Math.random() - 0.5) * 100)) * 20;
-      meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
-    }
+        for(let i = 1;i < HORSE_NUM;++i){
+          meshes[i] = meshes[0].clone();
+          meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 200)) * 20;
+          meshes[i].position.z =  (Math.floor((Math.random() - 0.5) * 100)) * 20;
+          meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
+        }
 
-    for(let i = 0;i< HORSE_NUM;++i){
-      scene.add( meshes[i] );
-      mixers[i] = new THREE.AnimationMixer( meshes[i] );
-      let clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets, 30 );
-      mixers[i].clipAction( clip ).setDuration( horseAnimSpeed ).play();
-    }     
+        for(let i = 0;i< HORSE_NUM;++i){
+          scene.add( meshes[i] );
+          mixers[i] = new THREE.AnimationMixer( meshes[i] );
+          let clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets, 30 );
+          mixers[i].clipAction( clip ).setDuration( horseAnimSpeed ).play();
+        }     
+        resolve();
+      } );
+    });
+  })();
 
-  } );
 
 //   var horseGroups = [];
 //   window.addEventListener('resize', function () {
@@ -194,9 +212,6 @@ window.addEventListener('load', function () {
     }
     time += frameSpeed;
     if (time > endTime) {
-      if (parent) {
-        parent.postMessage('end','*');
-      }
       window.close();
       return;
     }
@@ -270,11 +285,12 @@ window.addEventListener('load', function () {
   //  }
   //  renderer.render(scene, camera);
   //};
-
-  SF.Audio.load().then(function () {
+  loadHorseMesh
+  .then(SF.Audio.load)
+  .then(()=>{
     chL = SF.Audio.source.buffer.getChannelData(0);
     chR = SF.Audio.source.buffer.getChannelData(1);
-    renderToFile(false);
+    renderToFile(preview);
   }).catch(function (e) {
     console.log(e);
   });
