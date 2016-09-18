@@ -112,7 +112,7 @@ window.addEventListener('load', function () {
 
   ffttexture.wrapS = THREE.RepeatWrapping;
   ffttexture.wrapT = THREE.RepeatWrapping;
-  ffttexture.repeat.set( 8, 8 );
+  ffttexture.repeat.set( 8, 4 );
 
   fftmesh.position.z = 0.0;
   fftmesh.rotation.x = Math.PI / 2;
@@ -238,7 +238,7 @@ window.addEventListener('load', function () {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0,0,TEXW,TEXH);
     //ctx.clearRect(0,0,TEXW,TEXH);
-     let wsize = 256;
+     let wsize = 1024;
 
     for(let i = 0;i < wsize;++i){
       var r = 0, l = 0;
