@@ -96,6 +96,35 @@ window.addEventListener('load', function () {
   var HORSE_NUM = 30;
 
 
+  // FFT表示用テクスチャ
+  var TEXW = TEXH = 1024;
+  var canvas = document.createElement('canvas');
+  canvas.width = TEXW;
+  canvas.height = TEXH;
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = "rgba(255,255,255,1.0)";
+  ctx.fillRect(0,0,TEXW,TEXH);
+  var ffttexture = new THREE.Texture(canvas);
+  ffttexture.needsUpdate = true;
+  var fftgeometry = new THREE.PlaneBufferGeometry(8192,8192,32,32);
+  var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture,transparent:true,overdraw:true,side:THREE.DoubleSide});
+  var fftmesh = new THREE.Mesh(fftgeometry,fftmaterial);
+
+  ffttexture.wrapS = THREE.RepeatWrapping;
+  ffttexture.wrapT = THREE.RepeatWrapping;
+  ffttexture.repeat.set( 8, 8 );
+
+  fftmesh.position.z = 0.0;
+  fftmesh.rotation.x = Math.PI / 2;
+
+  var fftmesh2 = fftmesh.clone();
+  fftmesh2.position.x += 8192;
+
+  scene.add(fftmesh);
+  scene.add(fftmesh2);
+
+
+
   var loadHorseMesh = (()=>{
     return new Promise((resolve,reject)=>{
       loader.load( "./horse.json", ( geometry ) => {
@@ -105,11 +134,14 @@ window.addEventListener('load', function () {
         //   morphTargets: true
         // } ) );
         let mat = new THREE.MeshPhongMaterial( {
-         //  vertexColors: THREE.FaceColors,
+        // vertexColors: THREE.FaceColors,
          // shading: THREE.SmoothShading,
+         //transparent:true,
+         //map:ffttexture,
+        // side:THREE.DoubleSide,
           morphTargets: true
         } );
-        mat.color = new THREE.Color(0.0,1.0,0.0);
+        mat.color = new THREE.Color(1.0,0.5,0.0);
         //mat.reflectivity = 1.0;
         //mat.specular = new THREE.Color(0.5,0.5,0.5);
         //mat.emissive = new THREE.Color(0.5,0,0);
@@ -124,8 +156,8 @@ window.addEventListener('load', function () {
 
         for(let i = 1;i < HORSE_NUM;++i){
           meshes[i] = meshes[0].clone();
-          meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 200)) * 20;
-          meshes[i].position.z =  (Math.floor((Math.random() - 0.5) * 100)) * 20;
+          meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 10)) * 450;
+          meshes[i].position.z =  (Math.floor((Math.random() - 0.5) * 10)) * 150;
           meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
         }
 
@@ -159,20 +191,6 @@ window.addEventListener('load', function () {
   //   console.log(e + '\n' + e.stack);
   // }
 
-  // FFT表示用テクスチャ
-
-  // var canvas = document.createElement('canvas');
-  // canvas.width = WIDTH;
-  // canvas.height = HEIGHT;
-  // var ctx = canvas.getContext('2d');
-  // ctx.fillStyle = "rgba(0,0,0,0.0)";
-  // ctx.clearRect(0,0,WIDTH,HEIGHT);
-  // var ffttexture = new THREE.Texture(canvas);
-  // ffttexture.needsUpdate = true;
-  // var fftgeometry = new THREE.PlaneBufferGeometry(2048,2048);
-  // var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture,transparent:true});
-  // var fftmesh = new THREE.Mesh(fftgeometry,fftmaterial);
-  // fftmesh.position.z = 0.00;
 
   // scene.add(fftmesh);
 
@@ -217,28 +235,73 @@ window.addEventListener('load', function () {
     }
     ++frameNo;
 
-    // ctx.fillStyle = 'rgba(0,0,0,0.0)';
-    // ctx.clearRect(0,0,WIDTH,HEIGHT);
-    // ctx.fillStyle = 'rgba(255,0,0,0.5)';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0,0,TEXW,TEXH);
+    //ctx.clearRect(0,0,TEXW,TEXH);
+     let wsize = 256;
+
+    for(let i = 0;i < wsize;++i){
+      var r = 0, l = 0;
+      if((waveCount + i) < (chR.length)){
+          r = chR[waveCount + i];
+          l = chL[waveCount + i];
+      }
+
+      let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
+      ctx.fillStyle = hsl;
+      if(r>0){
+        ctx.fillRect(TEXH/4 - r * TEXH / 4 - TEXW/wsize/2 ,i * TEXW/wsize,r * TEXH / 4,TEXW/wsize);
+      } else {
+        ctx.fillRect(TEXH/4 - TEXW/wsize/2 ,i * TEXW/wsize,-r * TEXH / 4,TEXW/wsize);
+      }
+
+      hsl = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
+      ctx.fillStyle = hsl;
+      if(l>0){
+        ctx.fillRect(TEXH/4 * 3 - r * TEXH / 4 - TEXW/wsize/2 ,i * TEXW/wsize,r * TEXH / 4,TEXW/wsize);
+      } else {
+        ctx.fillRect(TEXH/4 * 3 - TEXW/wsize/2 ,i * TEXW/wsize,-r * TEXH / 4,TEXW/wsize);
+      }
+
+
+    }
+
+    fftmesh.position.x -= 50;
+  
+    if(fftmesh.position.x < -4096)
+      fftmesh.position.x = 0;
+
+    fftmesh2.position.x -= 50;
+  
+    if(fftmesh2.position.x < 0)
+      fftmesh2.position.x = 8192;
 
     // fft.forward(chR.subarray(waveCount,waveCount + fftsize));
+    // var pw = TEXH / (fftsize/2); 
     // var spectrum = fft.real;
-    // for(var x = 0,e = fftsize / 2;x < e;++x){
-    //   var h = Math.abs(spectrum[x]) * HEIGHT / 8;
-    //   ctx.fillRect(x * 8 + 100,HEIGHT / 2 - h,5,h);
+    // for(var x = 0,e = fftsize/2 ;x < e;++x){
+    //   let db = -30 + Math.log10(Math.abs(spectrum[x])) * 10;
+    //   let h = (120 + db) * TEXH / 240;
+    //   let hsl = 'hsl(' + Math.floor((120 + db) / 120 * 150 + 260) + ',100%,50%)';
+    //   ctx.fillStyle = hsl;
+    //   ctx.fillRect(x * pw,TEXH/2 - h,pw,h);
     // }
     // fft.forward(chL.subarray(waveCount,waveCount + fftsize));
     // spectrum = fft.real;
-    // for(var x = 0,e = fftsize / 2;x < e;++x){
-    //   var h = Math.abs(spectrum[x]) * HEIGHT / 8;
-    //   ctx.fillRect(x * 8 + 100,HEIGHT / 2,5,h);
+    // for(var x = 0,e = fftsize/2 ;x < e;++x){
+    //   let db = -30 + Math.log10(Math.abs(spectrum[x])) * 10;
+    //   let h = (120 + db) * TEXH / 240;
+    //   let hsl = 'hsl(' + Math.floor((120 + db) / 120 * 150 + 260) + ',100%,50%)';
+    //   ctx.fillStyle = hsl;
+    //   ctx.fillRect(x * pw,TEXH / 2,pw,h);
     // }
 
     waveCount += step;
     if(waveCount >= chR.length){
       window.close();
     }
-    //ffttexture.needsUpdate =true;
+    
+    ffttexture.needsUpdate =true;
 
     camera.lookAt( camera.target );
 
