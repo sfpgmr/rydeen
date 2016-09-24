@@ -20,29 +20,12 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js" />
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js" />
-/// <reference path="..\intellisense\q.intellisense.js" />
 "use strict";
 
 // Node.js で動作しているか
 (function () {
-  var isNode = (typeof process !== "undefined" && typeof require !== "undefined");
-  // ブラウザ上(非Node.js)で動作しているか
-  var isBrowser = !isNode
-  // node-webkitで動作しているか
-  var isNodeWebkit;
-  try {
-    isNodeWebkit = isNode ? (typeof require('nw.gui') !== "undefined") : false;
-  } catch (e) {
-    isNodeWebkit = false;
-  }
 
-  //if ((isBrowser || isNodeWebkit) && !window['SF']) {
-    window.SF = {};
-  //}
-
-
+  var SF = {};
 
   // http://blog.livedoor.jp/dankogai/archives/51756459.html より
   var getFunctionName = function(f){
@@ -273,17 +256,19 @@
       {
         factory:function (json) {
           var o = json.data;
-          var instance = new THREE.Path();
+          var instance = new THREE.ShapePath();
+          instance.currentPath = new THREE.Path();
+          instance.subPaths.push(instance.currentPath);
           if('curves' in o){
-            instance.curves = mapArray(o.curves);
+            instance.currentPath.curves = mapArray(o.curves);
           }
           if('bends' in o){
-            instance.bends = mapArray(o.bends);
+            instance.currentPath.bends = mapArray(o.bends);
           }
           if('actions' in o){
-            instance.actions = mapArray(o.actions);
+            instance.currentPath.actions = mapArray(o.actions);
           }
-          instance.autoClose = o.autoClose;
+          instance.currentPath.autoClose = o.autoClose;
           return instance;
         }
       }]
@@ -349,6 +334,7 @@
     }
   }
 
+  module.exports = SF;
 
 })();
 

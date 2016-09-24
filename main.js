@@ -20,7 +20,7 @@ function createWindow () {
   mainWindow.loadURL(`file://${__dirname}/index.html` + (preview?'#preview':''));
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools('undocked');
+  mainWindow.webContents.openDevTools('undocked');
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {

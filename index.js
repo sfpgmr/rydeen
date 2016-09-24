@@ -26,7 +26,10 @@
 //document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
 //':35729/livereload.js?snipver=2"></' + 'script>');
 
+var fps = 30;
+
 var fs = require('fs');
+var sf = require('./pathSerializer');
 var denodeify = require('./denodeify'); 
 var readFile = denodeify(fs.readFile);
 var writeFile = denodeify(fs.writeFile); 
@@ -93,11 +96,12 @@ window.addEventListener('load', function () {
   var horseAnimSpeed = (60.0 / (143.0));
   var meshes = [];
   var mixers = [];
-  var HORSE_NUM = 30;
+  var HORSE_NUM = 40;
 
 
   // FFT表示用テクスチャ
-  var TEXW = TEXH = 1024;
+  var TEXW = 1024;
+  var TEXH = 1024;
   var canvas = document.createElement('canvas');
   canvas.width = TEXW;
   canvas.height = TEXH;
@@ -106,7 +110,7 @@ window.addEventListener('load', function () {
   ctx.fillRect(0,0,TEXW,TEXH);
   var ffttexture = new THREE.Texture(canvas);
   ffttexture.needsUpdate = true;
-  var fftgeometry = new THREE.PlaneBufferGeometry(8192,8192,32,32);
+  var fftgeometry = new THREE.PlaneBufferGeometry(8192,8192,16,16);
   var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture,transparent:true,overdraw:true,side:THREE.DoubleSide});
   var fftmesh = new THREE.Mesh(fftgeometry,fftmaterial);
 
@@ -124,7 +128,7 @@ window.addEventListener('load', function () {
   scene.add(fftmesh2);
 
 
-
+  // 馬メッシュのロード
   var loadHorseMesh = (()=>{
     return new Promise((resolve,reject)=>{
       loader.load( "./horse.json", ( geometry ) => {
@@ -139,7 +143,12 @@ window.addEventListener('load', function () {
          //transparent:true,
          //map:ffttexture,
         // side:THREE.DoubleSide,
-          morphTargets: true
+//            morphNormals: true,
+           // color: 0xffffff,
+						morphTargets: true,
+						//morphNormals: true,
+						//shading: THREE.SmoothShading//,
+            //morphTargets: true
         } );
         mat.color = new THREE.Color(1.0,0.5,0.0);
         //mat.reflectivity = 1.0;
@@ -164,7 +173,7 @@ window.addEventListener('load', function () {
         for(let i = 0;i< HORSE_NUM;++i){
           scene.add( meshes[i] );
           mixers[i] = new THREE.AnimationMixer( meshes[i] );
-          let clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets, 30 );
+          let clip = THREE.AnimationClip.CreateFromMorphTargetSequence( 'gallop', geometry.morphTargets ,fps);
           mixers[i].clipAction( clip ).setDuration( horseAnimSpeed ).play();
         }     
         resolve();
@@ -173,6 +182,43 @@ window.addEventListener('load', function () {
   })();
 
 
+  // var gto;
+  // var horseGroups = [];
+  // try {
+  //   var shapes = [];
+  //   for (var i = 0; i < 11; ++i) {
+  //     var id = 'horse' + ('0' + i).slice(-2);
+  //     var path = fs.readFileSync('./media/' + id + '.json', 'utf-8');
+  //     // デシリアライズ
+  //     shape = sf.deserialize(JSON.parse(path));
+      
+  //     shape = shape.toShapes();
+  //     var shapeGeometry = new THREE.ShapeGeometry(shape);
+  //     shapes.push({ name: id, shape: shapeGeometry });
+  //   }
+
+  //   var ggroup = new THREE.Group();
+  //   for (var i = 0; i < 1; ++i) {
+  //     var group = new THREE.Group();
+  //     shapes.forEach(function (sm) {
+  //       var shapeMesh = createShape(sm.shape, 0xFFFF00, 0, 0, 0, 0, 0, 0, 1.0);
+  //       shapeMesh.visible = false;
+  //       shapeMesh.name = sm.name;
+  //       group.add(shapeMesh);
+  //     });
+  //     group.position.x = 0;
+  //     group.position.y = 0;
+  //     group.position.z = 0.0;
+  //     horseGroups.push(group);
+  //     ggroup.add(group);
+  //   }
+  //   scene.add(ggroup);
+  //   ggroup.name = 'world';
+
+  //   //d3.select('#svg').remove();
+  // } catch (e) {
+  //   console.log(e + '\n' + e.stack);
+  // }
 //   var horseGroups = [];
 //   window.addEventListener('resize', function () {
 // //    WIDTH = window.innerWidth;
@@ -196,15 +242,15 @@ window.addEventListener('load', function () {
 
   //レンダリング
   var r = 0.0;
-  var step = 48000 / 30;
+  var step = 48000 / fps;
   var fftsize = 256;
   var fft = new FFT(fftsize, 48000);
   var waveCount = 0;
   var index = 0;
   var time = 0.0;
   var frameNo = 0;
-  var endTime = 60.0 * 4.0 + 35.0;
-  var frameSpeed = 1.0 / 30.0; 
+  var endTime = 60.0 * 4.0 + 30.0;
+  var frameSpeed = 1.0 / fps; 
   var delta = frameSpeed;
   var previewCount = 0;
   var chR;
@@ -212,6 +258,7 @@ window.addEventListener('load', function () {
   var timer = 0;
   var pchain = Promise.resolve(0);
   var radius = 1000,theta = 0;
+  var fftmeshSpeed = 50 * 30 / fps;
   
   function renderToFile(preview) {
     if (preview) {
@@ -236,12 +283,12 @@ window.addEventListener('load', function () {
     ++frameNo;
 
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0,0,TEXW,TEXH);
-    //ctx.clearRect(0,0,TEXW,TEXH);
-     let wsize = 1024;
+    //ctx.fillRect(0,0,TEXW,TEXH);
+    ctx.clearRect(0,0,TEXW,TEXH);
+    let wsize = 1024;
 
     for(let i = 0;i < wsize;++i){
-      var r = 0, l = 0;
+      let r = 0, l = 0;
       if((waveCount + i) < (chR.length)){
           r = chR[waveCount + i];
           l = chL[waveCount + i];
@@ -250,28 +297,28 @@ window.addEventListener('load', function () {
       let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
       ctx.fillStyle = hsl;
       if(r>0){
-        ctx.fillRect(TEXH/4 - r * TEXH / 4 - TEXW/wsize/2 ,i * TEXW/wsize,r * TEXH / 4,TEXW/wsize);
+        ctx.fillRect(TEXW/4 - r * TEXW / 4 - TEXW/wsize/2 ,i * TEXH/wsize,r * TEXW / 4,TEXH/wsize);
       } else {
-        ctx.fillRect(TEXH/4 - TEXW/wsize/2 ,i * TEXW/wsize,-r * TEXH / 4,TEXW/wsize);
+        ctx.fillRect(TEXW/4 - TEXW/wsize/2 ,i * TEXH/wsize,-r * TEXW / 4,TEXH/wsize);
       }
 
       hsl = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
       ctx.fillStyle = hsl;
       if(l>0){
-        ctx.fillRect(TEXH/4 * 3 - r * TEXH / 4 - TEXW/wsize/2 ,i * TEXW/wsize,r * TEXH / 4,TEXW/wsize);
+        ctx.fillRect(TEXW/4 * 3 - l * TEXW / 4  - TEXW/wsize/2,i * TEXH/wsize,l * TEXW / 4,TEXH/wsize);
       } else {
-        ctx.fillRect(TEXH/4 * 3 - TEXW/wsize/2 ,i * TEXW/wsize,-r * TEXH / 4,TEXW/wsize);
+        ctx.fillRect(TEXW/4 * 3 - TEXW/wsize/2 ,i * TEXH/wsize,-l * TEXW / 4,TEXH/wsize);
       }
 
 
     }
 
-    fftmesh.position.x -= 50;
+    fftmesh.position.x -= fftmeshSpeed;
   
     if(fftmesh.position.x < -4096)
       fftmesh.position.x = 0;
 
-    fftmesh2.position.x -= 50;
+    fftmesh2.position.x -= fftmeshSpeed;
   
     if(fftmesh2.position.x < 0)
       fftmesh2.position.x = 8192;
@@ -296,6 +343,19 @@ window.addEventListener('load', function () {
     //   ctx.fillRect(x * pw,TEXH / 2,pw,h);
     // }
 
+    // {
+    //   let idx = parseInt(index,10);
+    //   for (var i = 0, end = horseGroups.length; i < end; ++i) {
+    //     var g = horseGroups[i];
+    //     g.getObjectByName('horse' + ('00' + idx.toString(10)).slice(-2)).visible = true;
+    //     if (idx == 0) {
+    //       g.getObjectByName('horse10').visible = false;
+    //     } else {
+    //       g.getObjectByName('horse' + ('00' + (idx - 1).toString(10)).slice(-2)).visible = false;
+    //     }
+    //   } 
+    // }
+
     waveCount += step;
     if(waveCount >= chR.length){
       window.close();
@@ -306,12 +366,12 @@ window.addEventListener('load', function () {
     camera.lookAt( camera.target );
 
     mixers.forEach((mixer)=>{
-      mixer.update(1 / 30);
+      mixer.update(1 / fps);
     });
 
     camera.position.x = radius * Math.sin( theta );
     camera.position.z = radius * Math.cos( theta );
-    theta += 0.01;
+    theta += 0.01 * 30 / fps;
 	  camera.lookAt( camera.target );
 
     renderer.render(scene, camera);
@@ -329,7 +389,7 @@ window.addEventListener('load', function () {
     } else {
       // プレビュー
       requestAnimationFrame(renderToFile.bind(null, preview));
-      renderer.render(scene, camera);
+      //renderer.render(scene, camera);
     }
   }
 
