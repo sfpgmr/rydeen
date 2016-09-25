@@ -8,7 +8,7 @@
   <meta name="author" content="sfpgmr" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js"></script>
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r80/three.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r81/three.js"></script>
   <script type="text/javascript" src="AudioAnalyser.js"></script>
   <script type="text/javascript" src="dsp.js"></script>
   <!--<script type="text/javascript" src="./graphics.js"></script> -->
@@ -23,10 +23,17 @@
     #svg {
       display: none;
     }
+
+    #stat {
+      position: absolute;
+      color:white;
+      font-size:20px;
+    }
   </style>
 
 </head>
 <body>
+  <div id="stat"></div>
   <div id="content"></div>
   <script type="text/javascript" src="index.js"></script>
 </body>
