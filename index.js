@@ -34,6 +34,7 @@ var denodeify = require('./denodeify');
 var TWEEN = require('tween.js');
 var readFile = denodeify(fs.readFile);
 var writeFile = denodeify(fs.writeFile); 
+var TimeLine = require('./TimeLine');
 
 // from gist
 // https://gist.github.com/gabrielflorit/3758456
@@ -297,67 +298,48 @@ window.addEventListener('load', function () {
   var pchain = Promise.resolve(0);
   var radius = 1000,theta = 0;
   var fftmeshSpeed = 50 * 30 / fps;
+ //var TimeLine = new TimeLine();
 
-  var horseFadein1 = new TWEEN.Tween({opacity:0});
-  horseFadein1.to({opacity:1.0},5000);
-  horseFadein1.delay(60420 - 1500);
-  horseFadein1.onUpdate(function(){
-      console.log(time,this.opacity);
-      meshes.forEach((d)=>{
-        d.material.opacity = this.opacity;
-      });
-  });
-
-  horseFadein1.onStart(()=>{
-    console.log('start');
-    horseGroup.visible = true;
-  });
-
-  var horseFadeOut1 = new TWEEN.Tween({opacity:1.0});
-  horseFadeOut1.to({opacity:0.0},3000);
-  horseFadeOut1.delay(20140 - 5000 - 3000);
-  horseFadeOut1.onUpdate(function(){
-      console.log(time,this.opacity);
-      meshes.forEach((d)=>{
-        d.material.opacity = this.opacity;
-      });
-  });
-  horseFadeOut1.onComplete(()=>{
-    horseGroup.visible = false;
-  });
-
-  var horseFadein2 = new TWEEN.Tween({opacity:0});
-  horseFadein2.to({opacity:1.0},5000);
-  horseFadein2.delay(134266 - 1500);
-  horseFadein2.onStart(()=>{
-    horseGroup.visible = true;
-  });
-  horseFadein2.onUpdate(function(){
-      meshes.forEach((d)=>{
-        d.material.opacity = this.opacity;
-      });
-  });
-
-
-  var horseFadeOut2 = new TWEEN.Tween({opacity:1.0});
-  horseFadeOut2.to({opacity:0.0},3000);
-  horseFadeOut2.delay(20140 - 5000 - 3000);
-  horseFadeOut2.onComplete(()=>{
-    horseGroup.visible = false;
-  });
-
-  horseFadeOut2.onUpdate(function(){
-      meshes.forEach((d)=>{
-        d.material.opacity = this.opacity;
-      });
-  });
   
-  
-  horseFadein1.chain(horseFadeOut1);
-  horseFadein2.chain(horseFadeOut2);
-  horseFadein1.start(0);
-  horseFadein2.start(0);
+  function horseFadein(){
+    let fadein = new TWEEN.Tween({opacity:0});
+    fadein.to({opacity:1.0},5000);
+    fadein.onUpdate(function(){
+        meshes.forEach((d)=>{
+          d.material.opacity = this.opacity;
+        });
+    });
+    fadein.onStart(()=>{
+      horseGroup.visible = true;
+    });
+    return fadein.start.bind(fadein);
+  }
 
+  function horseFadeout(){
+    var fadeout = new TWEEN.Tween({opacity:1.0});
+    fadeout.to({opacity:0.0},3000);
+    fadeout.onUpdate(function(){
+        console.log(time,this.opacity);
+        meshes.forEach((d)=>{
+          d.material.opacity = this.opacity;
+        });
+    });
+    fadeout.onComplete(()=>{
+      horseGroup.visible = false;
+    });
+
+    return fadeout.start.bind(fadeout);
+  }
+
+  var events = [
+    {time:60420 - 1500,func:horseFadein()},
+    {time:60240 + 20140 - 3000 - 1500,func:horseFadeout()},
+    {time:134266 - 1500,func:horseFadein()},
+    {time:134266 + 20140 - 3000 - 1500,func:horseFadeout()},
+  ];
+  
+
+  var timeline = new TimeLine(events); 
 
   var rotateCilynder = new TWEEN.Tween({time:0});
   var ry = 0;
@@ -553,7 +535,6 @@ window.addEventListener('load', function () {
   });
   cameraTween8.chain(cameraTween81);
   
-
   var cameraTween9 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:1.0});
   cameraTween9.to({x:0,y:1000,z:1000},1000);
   cameraTween9.delay(133.427 * 1000 - 1500);
@@ -568,8 +549,6 @@ window.addEventListener('load', function () {
     camera.position.z = Math.cos(this.theta) * radius;
   });
   cameraTween9.chain(cameraTween91);
-
-
 
   var cameraTween10 = new TWEEN.Tween({x:0,y:1000,z:500,opacity:0.0});
   cameraTween10.to({x:0,y:0,opacity:1.0},1000);
@@ -600,6 +579,9 @@ window.addEventListener('load', function () {
   cameraTween8.start(0);
   cameraTween9.start(0);
   cameraTween10.start(0);
+
+
+
 
   // Particles
 {
@@ -804,7 +786,9 @@ composer.addPass( effect );
     //renderer.render(scene, camera);
     composer.render(scene, camera);
     //uniforms.time.value += 0.05;
-    TWEEN.update(parseInt(time * 1000));
+    let timeMs = time * 1000;
+    timeline.update(timeMs);
+    TWEEN.update(timeMs);
     if(preview){
       d3.select('#stat').text(time);
    }
