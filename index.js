@@ -616,6 +616,26 @@ window.addEventListener('load', function () {
   }
 }
 
+// Glitch Effect
+
+composer = new THREE.EffectComposer( renderer );
+composer.addPass( new THREE.RenderPass( scene, camera ) );
+// glitchPass = new THREE.GlitchPass();
+// //glitchPass.renderToScreen = true;
+// composer.addPass( glitchPass );
+composer.setSize(WIDTH,HEIGHT);
+
+let effect = new THREE.ShaderPass( THREE.DotScreenShader );
+effect.uniforms[ 'scale' ].value = 4;
+//effect.enabled = true;
+effect.renderToScreen = true;
+composer.addPass( effect );
+
+// effect = new THREE.ShaderPass( THREE.RGBShiftShader );
+// effect.uniforms[ 'amount' ].value = 0.0015;
+// effect.renderToScreen = true;
+// composer.addPass( effect );
+
 
   // Shader Sampleより拝借
   // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
@@ -781,7 +801,8 @@ window.addEventListener('load', function () {
       mixer.update(1 / fps);
     });
 
-    renderer.render(scene, camera);
+    //renderer.render(scene, camera);
+    composer.render(scene, camera);
     //uniforms.time.value += 0.05;
     TWEEN.update(parseInt(time * 1000));
     if(preview){
