@@ -5,11 +5,12 @@ class TimeLine extends EventEmitter
     super();
     this.index = 0;
     this.events = events;
+    this.events.length > 0 && this.events.sort((a,b)=>a.time - b.time);
   }
 
   add(time,func){
     this.events.push({time:time,func:func});
-    this.events.sort((a,b)=>a-b);
+    this.events.sort((a,b)=>a.time - b.time);
   }
 
   update(time){

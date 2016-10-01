@@ -73,6 +73,7 @@ window.addEventListener('load', function () {
   renderer.clear();
   // シーンの作成
   var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog( 0x000000, -1000, 8000 );
 
   // カメラの作成
   // var camera = new THREE.PerspectiveCamera(90.0, WIDTH / HEIGHT);
@@ -258,6 +259,7 @@ window.addEventListener('load', function () {
   // } catch (e) {
   //   console.log(e + '\n' + e.stack);
   // }
+
 //   var horseGroups = [];
 //   window.addEventListener('resize', function () {
 // //    WIDTH = window.innerWidth;
@@ -298,9 +300,9 @@ window.addEventListener('load', function () {
   var pchain = Promise.resolve(0);
   var radius = 1000,theta = 0;
   var fftmeshSpeed = 50 * 30 / fps;
- //var TimeLine = new TimeLine();
+  var writeFilePromises = []; 
 
-  
+  // 馬のフェードイン・フェードアウト
   function horseFadein(){
     let fadein = new TWEEN.Tween({opacity:0});
     fadein.to({opacity:1.0},5000);
@@ -331,17 +333,9 @@ window.addEventListener('load', function () {
     return fadeout.start.bind(fadeout);
   }
 
-  var events = [
-    {time:60420 - 1500,func:horseFadein()},
-    {time:60240 + 20140 - 3000 - 1500,func:horseFadeout()},
-    {time:134266 - 1500,func:horseFadein()},
-    {time:134266 + 20140 - 3000 - 1500,func:horseFadeout()},
-  ];
-  
-
-  var timeline = new TimeLine(events); 
-
-  var rotateCilynder = new TWEEN.Tween({time:0});
+ // シリンダーの回転
+ function rotateCilynder(){
+  let rotateCilynder = new TWEEN.Tween({time:0});
   var ry = 0;
   rotateCilynder
   .to({time:endTime},1000 * endTime)
@@ -354,269 +348,342 @@ window.addEventListener('load', function () {
 	  ry += 0.001;
     camera.lookAt( camera.target );
   });
+  return rotateCilynder;
+ }
 
-  rotateCilynder.start(0);
+  // カメラワーク
 
-  var cameraTween = new TWEEN.Tween({x:0,y:0,z:1000,opacity:1.0});
-  cameraTween.to({x:0,z:radius,y:2000,opacity:0.0},1000);
-  cameraTween.delay(20.140 * 1000 - 1500);
-  cameraTween.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween.onStart(function(){
-    fftmesh.visible = true;
-    fftmesh2.visible = true;
-  });
-  cameraTween.onComplete(function(){
-    wmesh.visible = false;
-  });
-  var cameraTween11 = new TWEEN.Tween({theta:0});
-  cameraTween11.to({theta:-4 * Math.PI},11587);
-  cameraTween11.onUpdate(function(){
-    camera.position.x = Math.sin(this.theta) * radius;
-    camera.position.z = Math.cos(this.theta) * radius;
-  });
-  cameraTween.chain(cameraTween11);
+  function cameraTween(){
+    let cameraTween = new TWEEN.Tween({x:0,y:0,z:1000,opacity:1.0});
+    cameraTween.to({x:0,z:radius,y:2000,opacity:0.0},1000);
+    //cameraTween.delay(20.140 * 1000 - 1500);
+    cameraTween.onUpdate(function(){
+      fftmesh.material.opacity = 1.0 - this.opacity;
+      fftmesh2.material.opacity = 1.0 - this.opacity;
+      wmesh.material.opacity = this.opacity;
+      camera.position.x = this.x;
+      camera.position.y = this.y;
+    });
+    cameraTween.onStart(function(){
+      fftmesh.visible = true;
+      fftmesh2.visible = true;
+    });
+    cameraTween.onComplete(function(){
+      wmesh.visible = false;
+    });
+    var cameraTween11 = new TWEEN.Tween({theta:0});
+    cameraTween11.to({theta:-4 * Math.PI},11587);
+    cameraTween11.onUpdate(function(){
+      camera.position.x = Math.sin(this.theta) * radius;
+      camera.position.z = Math.cos(this.theta) * radius;
+    });
+    cameraTween.chain(cameraTween11);
+    return cameraTween;
+  }
 
+  function cameraTween2(){
+    let cameraTween2 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:0.0});
+    cameraTween2.to({x:0,y:0,opacity:1.0},1000);
+    cameraTween2.onUpdate(function(){
+      fftmesh.material.opacity = 1.0 - this.opacity;
+      fftmesh2.material.opacity = 1.0 - this.opacity;
+      wmesh.material.opacity = this.opacity;
+      camera.position.x = this.x;
+      camera.position.y = this.y;
+    });
+    cameraTween2.onStart(function(){
+      wmesh.visible = true;
+    });
+    cameraTween2.onComplete(function(){
+      fftmesh.visible = false;
+      fftmesh2.visible = false;
+    });
+    return cameraTween2;
+  }
 
-  var cameraTween2 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:0.0});
-  cameraTween2.to({x:0,y:0,opacity:1.0},1000);
-  cameraTween2.delay(32.727 * 1000 - 1500);
-  cameraTween2.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween2.onStart(function(){
-    wmesh.visible = true;
-  });
-  cameraTween2.onComplete(function(){
-    fftmesh.visible = false;
-    fftmesh2.visible = false;
-  });
+  function cameraTween4(){
+    let cameraTween4 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:1.0});
+    cameraTween4.to({x:0,y:1000,z:1000},1000);
+    cameraTween4.onUpdate(function(){
+      camera.position.x = this.x;
+      camera.position.y = this.y;
+    });
+    var cameraTween41 = new TWEEN.Tween({theta:0});
+    cameraTween41.to({theta:2 * Math.PI},18300);
+    cameraTween41.onUpdate(function(){
+      camera.position.x = Math.sin(this.theta) * radius;
+      camera.position.z = Math.cos(this.theta) * radius;
+    });
+    cameraTween4.chain(cameraTween41);
 
-  var cameraTween3 = new TWEEN.Tween({x:0,y:0,z:1000,opacity:1.0});
-  cameraTween3.to({x:0,z:radius,y:2000,opacity:0.0},1000);
-  cameraTween3.delay(46.993 * 1000 - 1500);
-  cameraTween3.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween3.onStart(function(){
-    fftmesh.visible = true;
-    fftmesh2.visible = true;
-  });
-  cameraTween3.onComplete(function(){
-    wmesh.visible = false;
-  });
-  var cameraTween31 = new TWEEN.Tween({theta:0});
-  cameraTween31.to({theta:4 * Math.PI},11587);
-  cameraTween31.onUpdate(function(){
-    camera.position.x = Math.sin(this.theta) * radius;
-    camera.position.z = Math.cos(this.theta) * radius;
-  });
-  cameraTween3.chain(cameraTween31);
-  
-  
-
-  var cameraTween4 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:1.0});
-  cameraTween4.to({x:0,y:1000,z:1000},1000);
-  cameraTween4.delay(60.420 * 1000 - 1500);
-  cameraTween4.onUpdate(function(){
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  var cameraTween41 = new TWEEN.Tween({theta:0});
-  cameraTween41.to({theta:2 * Math.PI},18300);
-  cameraTween41.onUpdate(function(){
-    camera.position.x = Math.sin(this.theta) * radius;
-    camera.position.z = Math.cos(this.theta) * radius;
-  });
-  cameraTween4.chain(cameraTween41);
-
-
-
-  var cameraTween5 = new TWEEN.Tween({x:0,y:1000,z:500,opacity:0.0});
-  cameraTween5.to({x:0,y:0,opacity:1.0},1000);
-  cameraTween5.delay(79.720 * 1000 - 1500);
-  cameraTween5.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween5.onStart(function(){
-    wmesh.visible = true;
-  });
-  cameraTween5.onComplete(function(){
-    fftmesh.visible = false;
-    fftmesh2.visible = false;
-  });
-
-  var cameraTween6 = new TWEEN.Tween({x:0,y:0,z:1000,opacity:1.0});
-  cameraTween6.to({x:0,y:2000,opacity:0.0},1000);
-  cameraTween6.delay(93.986 * 1000 - 1500);
-  cameraTween6.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween6.onStart(function(){
-    fftmesh.visible = true;
-    fftmesh2.visible = true;
-  });
-  cameraTween6.onComplete(function(){
-    wmesh.visible = false;
-  });  
-  var cameraTween61 = new TWEEN.Tween({theta:0});
-  cameraTween61.to({theta:-4 * Math.PI},11587);
-  cameraTween61.onUpdate(function(){
-    camera.position.x = Math.sin(this.theta) * radius;
-    camera.position.z = Math.cos(this.theta) * radius;
-    
-  });
-  cameraTween6.chain(cameraTween61);
-
-
-  var cameraTween7 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:0.0});
-  cameraTween7.to({x:0,y:0,opacity:1.0},1000);
-  cameraTween7.delay(106.573 * 1000 - 1500);
-  cameraTween7.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween7.onStart(function(){
-    wmesh.visible = true;
-  });
-  cameraTween7.onComplete(function(){
-    fftmesh.visible = false;
-    fftmesh2.visible = false;
-  });
-
-
-
-  var cameraTween8 = new TWEEN.Tween({x:0,y:0,z:1000,opacity:1.0});
-  cameraTween8.to({x:0,y:2000,opacity:0.0},1000);
-  cameraTween8.delay(120.839 * 1000 - 1500);
-  cameraTween8.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween8.onStart(function(){
-    fftmesh.visible = true;
-    fftmesh2.visible = true;
-  });
-  cameraTween8.onComplete(function(){
-    wmesh.visible = false;
-  });
-  var cameraTween81 = new TWEEN.Tween({theta:0});
-  cameraTween81.to({theta:4 * Math.PI},11587);
-  cameraTween81.onUpdate(function(){
-    camera.position.x = Math.sin(this.theta) * radius;
-    camera.position.z = Math.cos(this.theta) * radius;
-  });
-  cameraTween8.chain(cameraTween81);
-  
-  var cameraTween9 = new TWEEN.Tween({x:0,y:2000,z:1000,opacity:1.0});
-  cameraTween9.to({x:0,y:1000,z:1000},1000);
-  cameraTween9.delay(133.427 * 1000 - 1500);
-  cameraTween9.onUpdate(function(){
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  var cameraTween91 = new TWEEN.Tween({theta:0});
-  cameraTween91.to({theta:2 * Math.PI},18300);
-  cameraTween91.onUpdate(function(){
-    camera.position.x = Math.sin(this.theta) * radius;
-    camera.position.z = Math.cos(this.theta) * radius;
-  });
-  cameraTween9.chain(cameraTween91);
-
-  var cameraTween10 = new TWEEN.Tween({x:0,y:1000,z:500,opacity:0.0});
-  cameraTween10.to({x:0,y:0,opacity:1.0},1000);
-  cameraTween10.delay(180.420 * 1000 - 1500);
-  cameraTween10.onUpdate(function(){
-    fftmesh.material.opacity = 1.0 - this.opacity;
-    fftmesh2.material.opacity = 1.0 - this.opacity;
-    wmesh.material.opacity = this.opacity;
-    camera.position.x = this.x;
-    camera.position.y = this.y;
-  });
-  cameraTween10.onStart(function(){
-    wmesh.visible = true;
-  });
-  cameraTween10.onComplete(function(){
-    fftmesh.visible = false;
-    fftmesh2.visible = false;
-  });  
-
-
-  cameraTween.start(0);
-  cameraTween2.start(0);
-  cameraTween3.start(0);
-  cameraTween4.start(0);
-  cameraTween5.start(0);
-  cameraTween6.start(0);
-  cameraTween7.start(0);
-  cameraTween8.start(0);
-  cameraTween9.start(0);
-  cameraTween10.start(0);
-
-
-
+    return cameraTween4;
+  }
 
   // Particles
-{
-  let material = new THREE.SpriteMaterial({
-    map: new THREE.CanvasTexture(generateSprite()),
-    blending: THREE.AdditiveBlending,
-    transparent: true
-  });
-  for (var i = 0; i < 1000; i++) {
-    let p = new THREE.Sprite(material);
-    p.visible = false;
-    initParticle(p, 207.273 * 1000 - 1500 + i * 10);
-    scene.add(p);
+  
+  {
+    let material = new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(generateSprite()),
+      blending: THREE.AdditiveBlending,
+      transparent: true
+    });
+    for (var i = 0; i < 1000; i++) {
+      let p = new THREE.Sprite(material);
+      p.visible = false;
+      initParticle(p, 207.273 * 1000 - 1500 + i * 10);
+      scene.add(p);
+    }
   }
-}
 
-// Glitch Effect
+  // Post Effect
 
-composer = new THREE.EffectComposer( renderer );
-composer.addPass( new THREE.RenderPass( scene, camera ) );
-// glitchPass = new THREE.GlitchPass();
-// //glitchPass.renderToScreen = true;
-// composer.addPass( glitchPass );
-composer.setSize(WIDTH,HEIGHT);
+  composer = new THREE.EffectComposer(renderer);
+  renderPass = new THREE.RenderPass(scene, camera);
+  composer.addPass(renderPass);
+  composer.setSize(WIDTH, HEIGHT);
 
-let effect = new THREE.ShaderPass( THREE.DotScreenShader );
-effect.uniforms[ 'scale' ].value = 4;
-//effect.enabled = true;
-effect.renderToScreen = true;
-composer.addPass( effect );
+  let dotScreen = new THREE.ShaderPass(THREE.DotScreenShader);
+  dotScreen.uniforms['scale'].value = 4;
+  dotScreen.enabled = false;
+  dotScreen.renderToScreen = false;
+  //effect.enabled = true;
+  //effect.renderToScreen = true;
+  composer.addPass(dotScreen);
 
-// effect = new THREE.ShaderPass( THREE.RGBShiftShader );
-// effect.uniforms[ 'amount' ].value = 0.0015;
-// effect.renderToScreen = true;
-// composer.addPass( effect );
+  glitchPass = new THREE.GlitchPass();
+  glitchPass.renderToScreen = true;
+  glitchPass.enabled = true;
+  glitchPass.goWild = false;
+  composer.addPass( glitchPass );
+
+  // effect = new THREE.ShaderPass(THREE.RGBShiftShader);
+  // effect.uniforms['amount'].value = 0.0015;
+  // effect.enabled = false;
+  // effect.renderToScreen = false;
+  // composer.addPass(effect);
+
+  //renderPass.renderToScreen = true;
+
+  function start(tween){
+    let t = tween();
+    return t.start.bind(t);
+  }
+
+  function fillEffect(){
+    return  new TWEEN.Tween({})
+      .to({},40)
+      .onStart(()=>{
+        glitchPass.goWild = true;
+      })
+      .onComplete(()=>{
+        glitchPass.goWild = false;
+      });
+  }
+
+  // 間奏
+  function intEffect(){
+    return  new TWEEN.Tween({})
+      .to({},25.175 * 1000)
+      .onUpdate(()=>{
+        dotScreen.uniforms['scale'].value = (chR[waveCount] + chL[waveCount]) * 8 + 1;
+      })
+      .onStart(()=>{
+        dotScreen.enabled = true;
+      })
+      .onComplete(()=>{
+        dotScreen.enabled = false;
+      });
+  }
+
+  // テクスチャのアップデート
+
+
+
+  var events = [
+    // 馬のフェードイン・フェードアウト
+    {time:60420 - 1500,func:horseFadein()},
+    {time:60240 + 20140 - 3000 - 1500,func:horseFadeout()},
+    {time:134266 - 1500,func:horseFadein()},
+    {time:134266 + 20140 - 3000 - 1500,func:horseFadeout()},
+    // シリンダーの回転
+    {time:0,func:start(rotateCilynder)},
+    // カメラワーク
+    {time:20.140 * 1000 - 1500,func:start(cameraTween)},
+    {time:32.727 * 1000 - 1500,func:start(cameraTween2)},
+    {time:46.993 * 1000 - 1500,func:start(cameraTween)},
+    {time:60.420 * 1000 - 1500,func:start(cameraTween4)},
+    {time:79.720 * 1000 - 1500,func:start(cameraTween2)},
+    {time:93.986 * 1000 - 1500,func:start(cameraTween)},
+    {time:106.573 * 1000 - 1500,func:start(cameraTween2)},
+    {time:120.839 * 1000 - 1500,func:start(cameraTween)},
+    {time:133.427 * 1000 - 1500,func:start(cameraTween4)},
+    {time:180.420 * 1000 - 1500,func:start(cameraTween2)},
+    // drums fill
+    {time:5.874 * 1000 - 1500,func:start(fillEffect)},
+    {time:6.294 * 1000 - 1500,func:start(fillEffect)},
+
+    {time:19.510 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:19.510 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:19.510 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:19.510 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:19.510 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+
+    {time:32.727 * 1000 - 1500,func:start(fillEffect)},
+    {time:32.727 * 1000 - 1500 + 420,func:start(fillEffect)},
+
+    {time:46.364 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:46.364 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:46.364 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:46.364 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:46.364 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+
+    {time:49.719 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:49.719 * 1000 - 1500 + 105,func:start(fillEffect)},
+    
+    {time:50.137 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:50.137 * 1000 - 1500 + 105,func:start(fillEffect)},
+
+    {time:59.794 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:59.794 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:59.794 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:59.794 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:59.794 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    {time:59.794 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
+
+    {time:79.722 * 1000 - 1500,func:start(fillEffect)},
+    {time:79.722 * 1000 - 1500 + 420,func:start(fillEffect)},
+
+    {time:92.308 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:92.308 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:92.727 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:92.727 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:93.255 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:93.255 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:93.255 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:93.255 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:93.255 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    {time:93.255 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
+
+    {time:100.066 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:100.066 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:100.066 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:100.066 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:100.066 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+
+    {time:106.575 * 1000 - 1500,func:start(fillEffect)},
+    {time:106.575 * 1000 - 1500 + 420,func:start(fillEffect)},
+
+    {time:120.000 * 1000 - 1500,func:start(fillEffect)},
+    {time:120.000 * 1000 - 1500 + 210,func:start(fillEffect)},
+    {time:120.000 * 1000 - 1500 + 420,func:start(fillEffect)},
+    {time:120.000 * 1000 - 1500 + 630,func:start(fillEffect)},
+
+    {time:132.800 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:132.800 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:132.800 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:132.800 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:132.800 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+
+    {time:133.428 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:133.428 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:133.428 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:133.428 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:133.428 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    {time:133.428 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
+    {time:133.428 * 1000 - 1500 + 105 * 6,func:start(fillEffect)},
+    
+    {time:153.570 * 1000 - 1500,func:start(fillEffect)},
+    {time:153.570 * 1000 - 1500 + 420,func:start(fillEffect)},
+
+    {time:179.582 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:179.582 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:179.582 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+
+    {time:180.002 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:180.002 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:180.002 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+
+    {time:180.410 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:180.410 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:180.410 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:180.410 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:180.410 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    {time:180.410 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
+    {time:180.410 * 1000 - 1500 + 105 * 6,func:start(fillEffect)},
+
+    {time:187.134 * 1000 - 1500,func:start(fillEffect)},
+    {time:187.134 * 1000 - 1500 + 420,func:start(fillEffect)},
+
+    {time:193.222 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:193.222 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:193.222 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:193.222 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:193.222 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+
+    {time:193.841 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:193.841 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:193.841 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:193.841 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:193.841 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    {time:193.841 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
+    {time:193.841 * 1000 - 1500 + 105 * 6,func:start(fillEffect)},
+
+    {time:200.730 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:200.730 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:200.730 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:200.730 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:200.730 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    
+    {time:207.276 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:207.276 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:207.276 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+
+    {time:207.687 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:207.687 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:207.687 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+
+    {time:214.199 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:214.199 * 1000 - 1500 + 105,func:start(fillEffect)},
+
+    {time:214.612 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:214.612 * 1000 - 1500 + 105,func:start(fillEffect)},
+
+    {time:220.068 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:220.068 * 1000 - 1500 + 210,func:start(fillEffect)},
+    {time:220.068 * 1000 - 1500 + 210 * 2,func:start(fillEffect)},
+    {time:220.068 * 1000 - 1500 + 210 * 3,func:start(fillEffect)},
+    {time:220.068 * 1000 - 1500 + 210 * 4,func:start(fillEffect)},
+    {time:220.068 * 1000 - 1500 + 210 * 5,func:start(fillEffect)},
+    {time:220.068 * 1000 - 1500 + 210 * 6,func:start(fillEffect)},
+
+    {time:227.626 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:227.626 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:227.626 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:227.626 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:227.626 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+
+    {time:233.492 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:233.492 * 1000 - 1500 + 105,func:start(fillEffect)},
+
+    {time:233.916 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:233.916 * 1000 - 1500 + 105,func:start(fillEffect)},
+
+    {time:234.234 * 1000 - 1500 ,func:start(fillEffect)},
+    {time:234.234 * 1000 - 1500 + 105,func:start(fillEffect)},
+    {time:234.234 * 1000 - 1500 + 105 * 2,func:start(fillEffect)},
+    {time:234.234 * 1000 - 1500 + 105 * 3,func:start(fillEffect)},
+    {time:234.234 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
+    {time:234.234 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
+
+    // 間奏エフェクト
+    {time:154.406 * 1000 - 1500,func:start(intEffect)}
+
+  ];
+  
+
+  var timeline = new TimeLine(events); 
+
+
 
 
   // Shader Sampleより拝借
@@ -691,6 +758,7 @@ composer.addPass( effect );
     }
     time += frameSpeed;
     if (time > endTime) {
+      Promise.all(writeFilePromises);
       window.close();
       return;
     }
@@ -700,7 +768,7 @@ composer.addPass( effect );
     //ctx.fillRect(0,0,TEXW,TEXH);
     ctx.clearRect(0,0,TEXW,TEXH);
     let wsize = 1024;
-
+    let pat = (((time * 1000 + 179) / 105) & 3 ) == 0;
     for(let i = 0;i < wsize;++i){
       let r = 0, l = 0;
       if((waveCount + i) < (chR.length)){
@@ -708,23 +776,28 @@ composer.addPass( effect );
           l = chL[waveCount + i];
       }
 
-      let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
-      ctx.fillStyle = hsl;
+      let hsll = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
+      let hslr = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
+      
+
+      if(pat){
+        r = (r != 0 ? (r > 0 ? 1 : -1) : 0 ); 
+        l = (l != 0 ? (l > 0 ? 1 : -1) : 0 ) ; 
+      }
+
+      ctx.fillStyle = hsll;
       if(r>0){
         ctx.fillRect(TEXW/4 - r * TEXW / 4 - TEXW/wsize/2 ,i * TEXH/wsize,r * TEXW / 4,TEXH/wsize);
       } else {
         ctx.fillRect(TEXW/4 - TEXW/wsize/2 ,i * TEXH/wsize,-r * TEXW / 4,TEXH/wsize);
       }
 
-      hsl = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
-      ctx.fillStyle = hsl;
+      ctx.fillStyle = hslr;
       if(l>0){
         ctx.fillRect(TEXW/4 * 3 - l * TEXW / 4  - TEXW/wsize/2,i * TEXH/wsize,l * TEXW / 4,TEXH/wsize);
       } else {
         ctx.fillRect(TEXW/4 * 3 - TEXW/wsize/2 ,i * TEXH/wsize,-l * TEXW / 4,TEXH/wsize);
       }
-
-
     }
 
     fftmesh.position.x -= fftmeshSpeed;
@@ -772,6 +845,7 @@ composer.addPass( effect );
 
     waveCount += step;
     if(waveCount >= chR.length){
+      Promise.all(writeFilePromises);
       window.close();
     }
     
@@ -799,8 +873,17 @@ composer.addPass( effect );
       var data = d3.select('#console').node().toDataURL('image/png');
       data = data.substr(data.indexOf(',') + 1);
       var buffer = new Buffer(data, 'base64');
-      writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png', buffer, 'binary')
-      .then(renderToFile.bind(this,preview))
+      writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png', buffer, 'binary'));
+      let p = Promise.resolve(0);
+      if(writeFilePromises.length > 500)
+      {
+         p = Promise.all(writeFilePromises)
+         .then(()=>{
+           writeFilePromises.length = 0;
+         });
+      }
+
+      p.then(renderToFile.bind(this,preview))
       .catch(function(e){
         console.log(err);
       });
@@ -854,7 +937,7 @@ composer.addPass( effect );
 			}
 
 			function initParticle( particle, delay ) {
-       //let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
+       let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
 
 				var particle = this instanceof THREE.Sprite ? this : particle;
 				var delay = delay !== undefined ? delay : 0;
@@ -866,12 +949,12 @@ composer.addPass( effect );
 					.to( {}, 5000 )
 					.onComplete( initParticle )
           .onStart(function(){        particle.visible = true;
-})
+          })
 					.start(parseInt(time * 1000));
 				
         new TWEEN.Tween( particle.position )
 					.delay( delay )
-//					.to( { x: Math.random() * 500 - 250, y: Math.random() * 500 - 250, z: Math.random() * 1000 + 500 }, 10000 )
+					.to( { x: Math.random() * 500 - 250, y: Math.random() * 500 - 250, z: Math.random() * 1000 + 500 }, 10000 )
 					.to( { z: Math.random() * 1000 + 500 }, 5000 )
 					.start(parseInt(time * 1000));
 				

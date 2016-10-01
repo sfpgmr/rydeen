@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "svg-mesh-3d": "^1.1.0",
+    "three": "^0.81.2",
     "tween.js": "^16.3.5"
   }
 }
