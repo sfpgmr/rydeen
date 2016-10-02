@@ -35,6 +35,22 @@ var TWEEN = require('tween.js');
 var readFile = denodeify(fs.readFile);
 var writeFile = denodeify(fs.writeFile); 
 var TimeLine = require('./TimeLine');
+var nativeImage = require('electron').nativeImage;
+var sharp = require('sharp');
+
+function saveImage(buffer,path,width,height)
+{
+  return new Promise((resolve,reject)=>{
+    sharp(buffer,{raw:{width:width,height:height,channels:4}})
+    .rotate(180)
+    .jpeg()
+    .toFile(path,(err)=>{
+      if(err) reject(err);
+      resolve();      
+    });
+  });
+
+}
 
 // from gist
 // https://gist.github.com/gabrielflorit/3758456
@@ -165,6 +181,7 @@ window.addEventListener('load', function () {
 						morphTargets: true,
             transparent: true,
             opacity:0.0,
+            blending:THREE.AdditiveBlending,
             color:new THREE.Color(1.0,0.5,0.0),
 						//morphNormals: true,
 						//shading: THREE.SmoothShading
@@ -288,7 +305,7 @@ window.addEventListener('load', function () {
   var fft = new FFT(fftsize, 48000);
   var waveCount = 0;
   var index = 0;
-  time = 0.0;
+  time = 0;//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
   var endTime = 60.0 * 4.0 + 30.0;
   var frameSpeed = 1.0 / fps; 
@@ -450,11 +467,19 @@ window.addEventListener('load', function () {
   //effect.renderToScreen = true;
   composer.addPass(dotScreen);
 
+  let sfShaderPass = new THREE.SFShaderPass(WIDTH,HEIGHT);
+  composer.addPass(sfShaderPass);
+
   glitchPass = new THREE.GlitchPass();
-  glitchPass.renderToScreen = true;
+  //glitchPass.renderToScreen = true;
   glitchPass.enabled = true;
   glitchPass.goWild = false;
   composer.addPass( glitchPass );
+
+  let sfCapturePass = new THREE.SFCapturePass(WIDTH,HEIGHT);
+  sfCapturePass.renderToScreen = true;
+  composer.addPass(sfCapturePass);
+
 
   // effect = new THREE.ShaderPass(THREE.RGBShiftShader);
   // effect.uniforms['amount'].value = 0.0015;
@@ -683,63 +708,9 @@ window.addEventListener('load', function () {
 
   var timeline = new TimeLine(events); 
 
-
-
-
-  // Shader Sampleより拝借
-  // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
-
-//   {
-//   let vertShader = `
-// void main()	{
-//       gl_Position = vec4( position, 1.0 );
-//     }
-//   `;
-//   let fragShader = `
-// 			uniform vec2 resolution;
-// 			uniform float time;
-// 			void main()	{
-// 				vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
-// 				float a = time*40.0;
-// 				float d,e,f,g=1.0/40.0,h,i,r,q;
-// 				e=400.0*(p.x*0.5+0.5);
-// 				f=400.0*(p.y*0.5+0.5);
-// 				i=200.0+sin(e*g+a/150.0)*20.0;
-// 				d=200.0+cos(f*g/2.0)*18.0+cos(e*g)*7.0;
-// 				r=sqrt(pow(abs(i-e),2.0)+pow(abs(d-f),2.0));
-// 				q=f/r;
-// 				e=(r*cos(q))-a/2.0;f=(r*sin(q))-a/2.0;
-// 				d=sin(e*g)*176.0+sin(e*g)*164.0+r;
-// 				h=((f+d)+a/2.0)*g;
-// 				i=cos(h+r*p.x/1.3)*(e+e+a)+cos(q*g*6.0)*(r+h/3.0);
-// 				h=sin(f*g)*144.0-sin(e*g)*212.0*p.x;
-// 				h=(h+(f-e)*q+sin(r-(a+h)/7.0)*10.0+i/4.0)*g;
-// 				i+=cos(h*2.3*sin(a/350.0-q))*184.0*sin(q-(r*4.3+a/12.0)*g)+tan(r*g+h)*184.0*cos(r*g+h);
-// 				i=mod(i/5.6,256.0)/64.0;
-// 				if(i<0.0) i+=4.0;
-// 				if(i>=2.0) i=4.0-i;
-// 				d=r/350.0;
-// 				d+=sin(d*d*8.0)*0.52;
-// 				f=(sin(a*g)+1.0)/2.0;
-// 				gl_FragColor=vec4(vec3(f*i/1.6,i/2.0+d/13.0,i)*d*p.x+vec3(i/1.3+d/8.0,i/2.0+d/18.0,i)*d*(1.0-p.x),1.0);
-// 			}
-//   `;
-//     let geometry = new THREE.PlaneBufferGeometry( 1, 1 );
-//     uniforms = {
-//       time:       { value: 1.0 },
-//       resolution: { value: new THREE.Vector2() }
-//     };
-//     uniforms.resolution.value.x = WIDTH;
-//     uniforms.resolution.value.y = HEIGHT;
-//     let material = new THREE.ShaderMaterial( {
-//       uniforms: uniforms,
-//       vertexShader: vertShader,
-//       fragmentShader: fragShader
-//     } );
-//     let mesh = new THREE.Mesh( geometry, material );
-//     mesh.position.z = -5000;
-//     scene.add( mesh );
-//   }
+  if(time != 0){
+    timeline.skip(time);
+  }
 
   function renderToFile(preview) {
     if (preview) {
@@ -859,7 +830,7 @@ window.addEventListener('load', function () {
 
     //renderer.render(scene, camera);
     composer.render(scene, camera);
-    //uniforms.time.value += 0.05;
+    sfShaderPass.uniforms.time.value += 0.105;
     let timeMs = time * 1000;
     timeline.update(timeMs);
     TWEEN.update(timeMs);
@@ -870,19 +841,27 @@ window.addEventListener('load', function () {
 
     if (!preview) {
       // canvasのtoDataURLを使用した実装
-      var data = d3.select('#console').node().toDataURL('image/png');
-      data = data.substr(data.indexOf(',') + 1);
-      var buffer = new Buffer(data, 'base64');
-      writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png', buffer, 'binary'));
-      let p = Promise.resolve(0);
-      if(writeFilePromises.length > 500)
-      {
-         p = Promise.all(writeFilePromises)
-         .then(()=>{
-           writeFilePromises.length = 0;
-         });
-      }
+      
 
+      
+      //var data = d3.select('#console').node().toDataURL('image/png');
+      //var img  = nativeImage.createFromDataURL(data);
+      //data = data.substr(data.indexOf(',') + 1);
+      //var buffer = new Buffer(data, 'base64');
+      //renderer.readRenderTargetPixels()
+      // var data = d3.select('#console').node().toDataURL('image/jpeg');
+      // var img  = nativeImage.createFromDataURL(data);
+      // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
+      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',WIDTH,HEIGHT));
+      let p = Promise.resolve(0);
+      if(writeFilePromises.length > 50)
+      {
+        p = Promise.all(writeFilePromises)
+        .then(()=>{
+          writeFilePromises.length = 0;
+        });
+      }
+      // saveImage(new Buffer(sfCapturePass.buffer.buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png',WIDTH,HEIGHT)
       p.then(renderToFile.bind(this,preview))
       .catch(function(e){
         console.log(err);
@@ -920,50 +899,49 @@ window.addEventListener('load', function () {
   });
 
 
-			function generateSprite() {
-				var canvas = document.createElement( 'canvas' );
-				canvas.width = 16;
-				canvas.height = 16;
-				var context = canvas.getContext( '2d' );
-				var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
-				gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
-				gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
-				gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
-				gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
-        context.clearRect(0,0,canvas.width, canvas.height)
-				context.fillStyle = gradient;
-				context.fillRect( 0, 0, canvas.width, canvas.height );
-				return canvas;
-			}
+  function generateSprite() {
+    var canvas = document.createElement( 'canvas' );
+    canvas.width = 16;
+    canvas.height = 16;
+    var context = canvas.getContext( '2d' );
+    var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
+    gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
+    gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
+    gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+    context.clearRect(0,0,canvas.width, canvas.height)
+    context.fillStyle = gradient;
+    context.fillRect( 0, 0, canvas.width, canvas.height );
+    return canvas;
+  }
 
-			function initParticle( particle, delay ) {
-       let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
+  function initParticle( particle, delay ) {
+    let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
 
-				var particle = this instanceof THREE.Sprite ? this : particle;
-				var delay = delay !== undefined ? delay : 0;
-        particle.position.set( Math.random() * 500 - 250, Math.random() * 500 - 250, -4000 );
-        particle.scale.x = particle.scale.y = Math.random() * 500 + 50;
+    var particle = this instanceof THREE.Sprite ? this : particle;
+    var delay = delay !== undefined ? delay : 0;
+    particle.position.set( Math.random() * 500 - 250, Math.random() * 500 - 250, -4000 );
+    particle.scale.x = particle.scale.y = Math.random() * 500 + 50;
 
-				new TWEEN.Tween( particle )
-					.delay( delay )
-					.to( {}, 5000 )
-					.onComplete( initParticle )
-          .onStart(function(){        particle.visible = true;
-          })
-					.start(parseInt(time * 1000));
-				
-        new TWEEN.Tween( particle.position )
-					.delay( delay )
-					.to( { x: Math.random() * 500 - 250, y: Math.random() * 500 - 250, z: Math.random() * 1000 + 500 }, 10000 )
-					.to( { z: Math.random() * 1000 + 500 }, 5000 )
-					.start(parseInt(time * 1000));
-				
-        new TWEEN.Tween( particle.scale )
-					.delay( delay )
-					.to( { x: 0.01, y: 0.01 }, 5000 )
-					.start(parseInt(time * 1000));
-
-			}
+    new TWEEN.Tween( particle )
+      .delay( delay )
+      .to( {}, 5000 )
+      .onComplete( initParticle )
+      .onStart(function(){        particle.visible = true;
+      })
+      .start(parseInt(time * 1000));
+    
+    new TWEEN.Tween( particle.position )
+      .delay( delay )
+      .to( { x: Math.random() * 500 - 250, y: Math.random() * 500 - 250, z: Math.random() * 1000 + 500 }, 10000 )
+      .to( { z: Math.random() * 1000 + 500 }, 5000 )
+      .start(parseInt(time * 1000));
+    
+    new TWEEN.Tween( particle.scale )
+      .delay( delay )
+      .to( { x: 0.01, y: 0.01 }, 5000 )
+      .start(parseInt(time * 1000));
+  }
 });
 
 

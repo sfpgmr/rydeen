@@ -22,5 +22,11 @@ class TimeLine extends EventEmitter
       this.emit('end');
     }
   }
+
+  skip(time){
+    while(this.index < this.events.length && time > this.events[this.index].time){
+      this.index += 1;
+    }
+  }
 }
 module.exports = TimeLine;
