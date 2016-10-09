@@ -3,6 +3,7 @@
  */
  // Shader Sampleより拝借
  // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
+"use strict";
 
   let vertexShader = 
 `
@@ -44,11 +45,16 @@ void main()	{
   d=r/350.0;
   d+=sin(d*d*8.0)*0.52;
   f=(sin(a*g)+1.0)/2.0;
-  c1 = vec4(vec3(f*i/1.6,i/2.0+d/13.0,i)*d*p.x+vec3(i/1.3+d/8.0,i/2.0+d/18.0,i)*d*(1.0-p.x),1.0);
   c2 = texture2D( tDiffuse, vUv );
-  //c2v = (c2.x + c2.y + c2.z) > 0.02 ? 1.0:0.5;
-  gl_FragColor = c2  + c1 * 0.5;
-  //gl_FragColor = (c2.x + c2.y + c2.z) > 0.02 ? c2 : c1;
+  c1 = vec4(vec3(f*i/1.6,i/2.0+d/13.0,i)*d*p.x+vec3(i/1.3+d/8.0,i/2.0+d/18.0,i)*d*(1.0-p.x),1.0);
+  float alpha = c2.w;
+  c2.w = 1.0;
+  if(length(vec3(c2.x,c2.y,c2.z)) > 0.0 ) 
+  {
+    gl_FragColor = c2;
+  } else {
+    gl_FragColor = vec4(vec3(c1.x,c1.y,c1.z)* 0.17,1.0);
+  }
 }
 `;
 
@@ -108,5 +114,5 @@ class SFShaderPass extends THREE.Pass {
 	}
 }
 
-THREE.SFShaderPass = SFShaderPass;
+module.exports = SFShaderPass;
 

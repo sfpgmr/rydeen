@@ -1,8 +1,10 @@
+"use strict";
 const electron = require('electron')
 // Module to control application life.
 const app = electron.app
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow
+
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -12,12 +14,19 @@ function createWindow () {
 
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 1920, height: 1080,useContentSize:true,resizable:false});
-  var preview = false;  
-  process.argv.forEach((arg)=>{
-    preview = (arg == '-preview'); 
+  var preview = false;
+  var framerate = 30;
+  process.argv.forEach((arg,i)=>{
+    if(arg == '-preview'){
+      preview = true;
+    }
+
+    if(arg == '-framerate'){
+      framerate = parseFloat(process.argv[i + 1]);
+    }
   });
   // and load the index.html of the app.
-  mainWindow.loadURL(`file://${__dirname}/index.html` + (preview?'#preview':''));
+  mainWindow.loadURL(`file://${__dirname}/index.html?preview=${preview}&framerate=${framerate}`);
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools('undocked');

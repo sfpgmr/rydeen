@@ -25,8 +25,7 @@
 // リリース時にはコメントアウトすること
 //document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
 //':35729/livereload.js?snipver=2"></' + 'script>');
-
-var fps = 30;
+"use strict";
 
 var fs = require('fs');
 var sf = require('./pathSerializer');
@@ -37,6 +36,11 @@ var writeFile = denodeify(fs.writeFile);
 var TimeLine = require('./TimeLine');
 var nativeImage = require('electron').nativeImage;
 var sharp = require('sharp');
+var QueryString = require('./QueryString');
+var SF8Pass = require('./SF8Pass');
+var SFShaderPass = require('./SFShaderPass');
+var SFCapturePass = require('./SFCapturePass');
+
 
 function saveImage(buffer,path,width,height)
 {
@@ -72,10 +76,15 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
   return mesh;
 }
 
+var time;
+
 // メイン
 window.addEventListener('load', function () {
-  var preview = window.location.hash.match(/preview/ig) != null;
-  var WIDTH = 1920, HEIGHT = 1080;
+  var qstr = new QueryString();
+  var params = qstr.parse(window.location.search.substr(1));
+  var preview = params.preview == 'true';
+  const fps = parseFloat(params.framerate);
+  const WIDTH = window.innerWidth , HEIGHT = window.innerHeight;
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
@@ -89,7 +98,7 @@ window.addEventListener('load', function () {
   renderer.clear();
   // シーンの作成
   var scene = new THREE.Scene();
-  scene.fog = new THREE.Fog( 0x000000, -1000, 8000 );
+  //scene.fog = new THREE.Fog( 0x000000, -1000, 8000 );
 
   // カメラの作成
   // var camera = new THREE.PerspectiveCamera(90.0, WIDTH / HEIGHT);
@@ -97,7 +106,7 @@ window.addEventListener('load', function () {
   // camera.position.y = 0.0;
   // camera.position.z = (WIDTH / 2.0) * HEIGHT / WIDTH;
   // camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
-  camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
+  var camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
   camera.position.z = 500;
   camera.position.x = 0;
   camera.position.y = 1000;
@@ -128,14 +137,20 @@ window.addEventListener('load', function () {
   ctx.fillStyle = "rgba(255,255,255,1.0)";
   ctx.fillRect(0,0,TEXW,TEXH);
   var ffttexture = new THREE.Texture(canvas);
+  var ffttexture2 = new THREE.Texture(canvas);
   ffttexture.needsUpdate = true;
-  var fftgeometry = new THREE.PlaneBufferGeometry(8192,8192,16,16);
-  var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture,transparent:true,overdraw:true,opacity:1.0,side:THREE.DoubleSide});
+  ffttexture2.needsUpdate = true;
+  var fftgeometry = new THREE.PlaneBufferGeometry(8192,8192,32,32);
+  var fftmaterial = new THREE.MeshBasicMaterial({map:ffttexture2,transparent:true,overdraw:true,opacity:1.0,side:THREE.DoubleSide});
   var fftmesh = new THREE.Mesh(fftgeometry,fftmaterial);
+
+  ffttexture2.wrapS = THREE.RepeatWrapping;
+  ffttexture2.wrapT = THREE.RepeatWrapping;
+  ffttexture2.repeat.set( 6, 1 );
 
   ffttexture.wrapS = THREE.RepeatWrapping;
   ffttexture.wrapT = THREE.RepeatWrapping;
-  ffttexture.repeat.set( 8, 4 );
+  ffttexture.repeat.set( 1, 1 );
 
   fftmesh.position.z = 0.0;
   fftmesh.rotation.x = Math.PI / 2;
@@ -147,6 +162,7 @@ window.addEventListener('load', function () {
   scene.add(fftmesh2);
 
   var wgeometry = new THREE.CylinderGeometry(512,512,32768,32,32,true);
+  wgeometry.rotateY(Math.PI / 2);
   var wmesh =  new THREE.Mesh(wgeometry,new THREE.MeshBasicMaterial({map:ffttexture,transparent:true,side:THREE.DoubleSide}));
   wmesh.position.x = 0;
   wmesh.position.y = 0;
@@ -181,7 +197,7 @@ window.addEventListener('load', function () {
 						morphTargets: true,
             transparent: true,
             opacity:0.0,
-            blending:THREE.AdditiveBlending,
+            //blending:THREE.AdditiveBlending,
             color:new THREE.Color(1.0,0.5,0.0),
 						//morphNormals: true,
 						//shading: THREE.SmoothShading
@@ -301,6 +317,7 @@ window.addEventListener('load', function () {
   //レンダリング
   var r = 0.0;
   var step = 48000 / fps;
+  var frameDelta = 30 / fps;
   var fftsize = 256;
   var fft = new FFT(fftsize, 48000);
   var waveCount = 0;
@@ -316,7 +333,7 @@ window.addEventListener('load', function () {
   var timer = 0;
   var pchain = Promise.resolve(0);
   var radius = 1000,theta = 0;
-  var fftmeshSpeed = 50 * 30 / fps;
+  var fftmeshSpeed = 50 * frameDelta;
   var writeFilePromises = []; 
 
   // 馬のフェードイン・フェードアウト
@@ -338,7 +355,6 @@ window.addEventListener('load', function () {
     var fadeout = new TWEEN.Tween({opacity:1.0});
     fadeout.to({opacity:0.0},3000);
     fadeout.onUpdate(function(){
-        console.log(time,this.opacity);
         meshes.forEach((d)=>{
           d.material.opacity = this.opacity;
         });
@@ -360,9 +376,9 @@ window.addEventListener('load', function () {
     //camera.position.x = radius * Math.sin( theta );
     //camera.rotation.z += 0.1;//radius * Math.cos( theta );
     //wmesh.rotation.x += 0.01;
-    wmesh.geometry.rotateY(0.05);
-    //theta += 0.01 * 30 / fps;
-	  ry += 0.001;
+    //wmesh.geometry.rotateY(0.05 * frameDelta);
+    //theta += 0.01 * frameDelta;
+	  //ry += 0.001 * frameDelta;
     camera.lookAt( camera.target );
   });
   return rotateCilynder;
@@ -389,7 +405,7 @@ window.addEventListener('load', function () {
       wmesh.visible = false;
     });
     var cameraTween11 = new TWEEN.Tween({theta:0});
-    cameraTween11.to({theta:-4 * Math.PI},11587);
+    cameraTween11.to({theta:-2 * Math.PI},11587);
     cameraTween11.onUpdate(function(){
       camera.position.x = Math.sin(this.theta) * radius;
       camera.position.z = Math.cos(this.theta) * radius;
@@ -454,38 +470,52 @@ window.addEventListener('load', function () {
 
   // Post Effect
 
-  composer = new THREE.EffectComposer(renderer);
-  renderPass = new THREE.RenderPass(scene, camera);
+  let composer = new THREE.EffectComposer(renderer);
+  let renderPass = new THREE.RenderPass(scene, camera);
   composer.addPass(renderPass);
   composer.setSize(WIDTH, HEIGHT);
+
+
+  let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
+  sfShaderPass.enabled = true;
+  sfShaderPass.renderToScreen = false;
+  composer.addPass(sfShaderPass);
+
+  
+  let glitchPass = new THREE.GlitchPass();
+  glitchPass.renderToScreen = false;
+  glitchPass.enabled = true;
+  glitchPass.goWild = false;
+  composer.addPass( glitchPass );
 
   let dotScreen = new THREE.ShaderPass(THREE.DotScreenShader);
   dotScreen.uniforms['scale'].value = 4;
   dotScreen.enabled = false;
   dotScreen.renderToScreen = false;
-  //effect.enabled = true;
-  //effect.renderToScreen = true;
+
   composer.addPass(dotScreen);
 
-  let sfShaderPass = new THREE.SFShaderPass(WIDTH,HEIGHT);
-  composer.addPass(sfShaderPass);
+  let sf8Pass = new SF8Pass();
+//  rgbShift.uniforms['amount'].value = 0.0035;
+  sf8Pass.enabled = true;
+  sf8Pass.renderToScreen = preview;
+  composer.addPass(sf8Pass);
 
-  glitchPass = new THREE.GlitchPass();
-  //glitchPass.renderToScreen = true;
-  glitchPass.enabled = true;
-  glitchPass.goWild = false;
-  composer.addPass( glitchPass );
+  // let rgbShift = new THREE.SF8Pass(THREE.RGBShiftShader);
+  // rgbShift.uniforms['amount'].value = 0.0035;
+  // rgbShift.enabled = false;
+  // rgbShift.renderToScreen = false;
+  // composer.addPass(rgbShift);
 
-  let sfCapturePass = new THREE.SFCapturePass(WIDTH,HEIGHT);
-  sfCapturePass.renderToScreen = true;
-  composer.addPass(sfCapturePass);
+  let sfCapturePass;
+  if(!preview){
+    sfCapturePass = new SFCapturePass(WIDTH,HEIGHT);
+    sfCapturePass.enabled = true;
+    sfCapturePass.renderToScreen = true;
+    composer.addPass(sfCapturePass);
+  }
 
 
-  // effect = new THREE.ShaderPass(THREE.RGBShiftShader);
-  // effect.uniforms['amount'].value = 0.0015;
-  // effect.enabled = false;
-  // effect.renderToScreen = false;
-  // composer.addPass(effect);
 
   //renderPass.renderToScreen = true;
 
@@ -517,6 +547,19 @@ window.addEventListener('load', function () {
       })
       .onComplete(()=>{
         dotScreen.enabled = false;
+      });
+  }
+
+  function intEffect2(){
+    return  new TWEEN.Tween({})
+      .to({},80)
+      .onUpdate(()=>{
+      })
+      .onStart(()=>{
+        dotScreen.enabled = false;
+      })
+      .onComplete(()=>{
+        dotScreen.enabled = true;
       });
   }
 
@@ -702,9 +745,28 @@ window.addEventListener('load', function () {
 
     // 間奏エフェクト
     {time:154.406 * 1000 - 1500,func:start(intEffect)}
+    //{time:0,func:start(intEffect)}
 
   ];
   
+  // 間奏エフェクト
+  {
+    let s = 161.119 * 1000 - 1500;
+    for(let i = 0;i < 11;++i){
+      let st = s + i * 420 * 4;
+      events = events.concat([
+        {time:st,func:start(intEffect2)},
+        {time:st + 210,func:start(intEffect2)},
+        {time:st + 420,func:start(intEffect2)},
+        {time:st + 735,func:start(intEffect2)},
+        {time:st + 945,func:start(intEffect2)},
+        {time:st + 1155,func:start(intEffect2)},
+        {time:st + 1260,func:start(intEffect2)},
+        {time:st + 1470,func:start(intEffect2)},
+      ]);
+    }
+  }
+
 
   var timeline = new TimeLine(events); 
 
@@ -735,8 +797,8 @@ window.addEventListener('load', function () {
     }
     ++frameNo;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    //ctx.fillRect(0,0,TEXW,TEXH);
+    // ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    // //ctx.fillRect(0,0,TEXW,TEXH);
     ctx.clearRect(0,0,TEXW,TEXH);
     let wsize = 1024;
     let pat = (((time * 1000 + 179) / 105) & 3 ) == 0;
@@ -751,10 +813,10 @@ window.addEventListener('load', function () {
       let hslr = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
       
 
-      if(pat){
-        r = (r != 0 ? (r > 0 ? 1 : -1) : 0 ); 
-        l = (l != 0 ? (l > 0 ? 1 : -1) : 0 ) ; 
-      }
+      // if(pat){
+      //   r = (r != 0 ? (r > 0 ? 1 : -1) : 0 ); 
+      //   l = (l != 0 ? (l > 0 ? 1 : -1) : 0 ) ; 
+      // }
 
       ctx.fillStyle = hsll;
       if(r>0){
@@ -821,16 +883,21 @@ window.addEventListener('load', function () {
     }
     
     ffttexture.needsUpdate =true;
+    ffttexture2.needsUpdate =true;
 
     camera.lookAt( camera.target );
 
+    
+    (frameNo & 1) && 
     mixers.forEach((mixer)=>{
-      mixer.update(1 / fps);
+      mixer.update(1 / fps * 2);
     });
 
     //renderer.render(scene, camera);
     composer.render(scene, camera);
-    sfShaderPass.uniforms.time.value += 0.105;
+    if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
+      sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
+    }
     let timeMs = time * 1000;
     timeline.update(timeMs);
     TWEEN.update(timeMs);
