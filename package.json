@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "midifile": "^1.0.4",
+    "mixin": "^0.2.0",
     "sharp": "^0.16.0",
     "svg-mesh-3d": "^1.1.0",
     "three": "^0.81.2",
