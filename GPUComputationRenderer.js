@@ -96,7 +96,7 @@
  * @param {int} sizeY Computation problem size is always 2d: sizeX * sizeY elements.
  * @param {WebGLRenderer} renderer The renderer
   */
-
+"use strict";
 class GPUComputationRenderer{
 	constructor( sizeX, sizeY, renderer ) {
 
@@ -119,7 +119,7 @@ class GPUComputationRenderer{
 
 	this.passThruShader = this.createShaderMaterial( this.getPassThroughFragmentShader(), this.passThruUniforms );
 
-	this.mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), passThruShader );
+	this.mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), this.passThruShader );
 	this.scene.add( this.mesh );
 	}
 
@@ -154,8 +154,8 @@ class GPUComputationRenderer{
 
 	init() {
 
-		sizeX = this.sizeX;
-		sizeY = this.sizeY;
+		let sizeX = this.sizeX;
+		let sizeY = this.sizeY;
 
 		if ( ! this.renderer.extensions.get( "OES_texture_float" ) ) {
 
@@ -317,8 +317,8 @@ class GPUComputationRenderer{
 		sizeXTexture = sizeXTexture || this.sizeX;
 		sizeYTexture = sizeYTexture || this.sizeY;
 
-		var a = new Float32Array( sizeXTexture * sizeYTexture * 4 );
-		var texture = new THREE.DataTexture( a, sizeXTexture, sizeYTexture, THREE.RGBAFormat, THREE.FloatType );
+		let a = new Float32Array( sizeXTexture * sizeYTexture * 4 );
+		let texture = new THREE.DataTexture( a, sizeXTexture, sizeYTexture, THREE.RGBAFormat, THREE.FloatType );
 		texture.needsUpdate = true;
 
 		return texture;
@@ -352,26 +352,21 @@ class GPUComputationRenderer{
 
 	getPassThroughVertexShader() {
 
-		return	"void main()	{\n" +
-				"\n" +
-				"	gl_Position = vec4( position, 1.0 );\n" +
-				"\n" +
-				"}\n";
-
+		return `
+		void main(){
+			gl_Position = vec4( position, 1.0 );
+		}
+		`;	
 	}
 
 	getPassThroughFragmentShader() {
-
-		return	"uniform sampler2D texture;\n" +
-				"\n" +
-				"void main() {\n" +
-				"\n" +
-				"	vec2 uv = gl_FragCoord.xy / resolution.xy;\n" +
-				"\n" +
-				"	gl_FragColor = texture2D( texture, uv );\n" +
-				"\n" +
-				"}\n";
-
+		return `
+		    uniform sampler2D texture;
+				void main() {
+					vec2 uv = gl_FragCoord.xy / resolution.xy;
+					gl_FragColor = texture2D( texture, uv );
+				}
+				`;
 	}
 
 }

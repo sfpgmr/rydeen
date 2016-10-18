@@ -132,7 +132,7 @@ class SFRydeenPass extends THREE.Pass {
     this.horseGroup = horseGroup;
 
     // 馬メッシュのロード
-    this.loadHorseMesh = (() => {
+    this.init = (() => {
       return new Promise((resolve, reject) => {
         loader.load("./horse.json", (geometry) => {
 
@@ -542,30 +542,31 @@ generateSprite() {
 initParticle(particle, delay) {
   //let hsl = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
 
-  var particle = this instanceof THREE.Sprite ? this : particle;
+  //var particle = this instanceof THREE.Sprite ? this : particle;
+  //var particle = this instanceof THREE.Sprite ? this : particle;
+  let timeMs = this.time * 1000;
   var delay = delay !== undefined ? delay : 0;
   particle.position.set(Math.random() * 500 - 250, Math.random() * 500 - 250, -4000);
   particle.scale.x = particle.scale.y = Math.random() * 500 + 50;
-
   new TWEEN.Tween(particle)
     .delay(delay)
     .to({}, 5000)
-    .onComplete(this.initParticle.bind(particle))
+    .onComplete(this.initParticle.bind(this,particle,0))
     .onStart(function () {
-    particle.visible = true;
+     particle.visible = true;
     })
-    .start(this.time);
+    .start(timeMs);
 
   new TWEEN.Tween(particle.position)
     .delay(delay)
     .to({ x: Math.random() * 500 - 250, y: Math.random() * 500 - 250, z: Math.random() * 1000 + 500 }, 10000)
     .to({ z: Math.random() * 1000 + 500 }, 5000)
-    .start(this.time);
+    .start(timeMs);
 
   new TWEEN.Tween(particle.scale)
     .delay(delay)
     .to({ x: 0.01, y: 0.01 }, 5000)
-    .start(this.time);
+    .start(timeMs);
 }  
 }
 
