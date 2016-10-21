@@ -1,0 +1,83 @@
+'use strict';
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var fs = _interopDefault(require('fs'));
+var path = _interopDefault(require('path'));
+
+var fs$1 = fs;
+var path$1 = path;
+
+var index = path$1.join(__dirname, fs$1.readFileSync(path$1.join(__dirname, 'path.txt'), 'utf-8'));
+
+const electron = index;
+// Module to control application life.
+const app = electron.app;
+// Module to create native browser window.
+const BrowserWindow = electron.BrowserWindow;
+
+
+// Keep a global reference of the window object, if you don't, the window will
+// be closed automatically when the JavaScript object is garbage collected.
+let mainWindow;
+
+function createWindow () {
+
+  // Create the browser window.
+  mainWindow = new BrowserWindow({width: 1920, height: 1080,useContentSize:true,resizable:false});
+  var preview = false;
+  var framerate = 30;
+  process.argv.forEach((arg,i)=>{
+    if(arg == '-preview'){
+      preview = true;
+    }
+
+    if(arg == '-framerate'){
+      framerate = parseFloat(process.argv[i + 1]);
+    }
+  });
+  // and load the index.html of the app.
+  mainWindow.loadURL(`file://${__dirname}/index.html?preview=${preview}&framerate=${framerate}`);
+
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools('undocked');
+
+  // Emitted when the window is closed.
+  mainWindow.on('closed', function () {
+    // Dereference the window object, usually you would store windows
+    // in an array if your app supports multi windows, this is the time
+    // when you should delete the corresponding element.
+    mainWindow = null;
+  });
+}
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on('ready', createWindow);
+
+// Quit when all windows are closed.
+app.on('window-all-closed', function () {
+  // On OS X it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', function () {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (mainWindow === null) {
+    createWindow();
+  }
+});
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and require them here.
+
+var main = {
+
+};
+
+module.exports = main;

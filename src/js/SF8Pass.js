@@ -8,7 +8,8 @@ class SF8Pass extends THREE.Pass {
   constructor() {
     super();
     let uniforms = {
-      tDiffuse: { value: null }
+      tDiffuse: { value: null },
+      colorbits: 1
     };
     let vertexShader =
       `
@@ -21,13 +22,15 @@ void main()	{
     let fragmentShader =
       `
 uniform sampler2D tDiffuse;
+uniform float colorbits;
 varying vec2 vUv;
 void main()	{
   vec4 c;
   c = texture2D( tDiffuse, vUv );
   //float a = c.w;
   //c = (step(0.25,c) + step(0.5,c) + step(0.75,c)) / 3.0;
-  c = floor(c * 8.0) / 8.0;
+  float b = exp2(colorbits);
+  c = floor(c * b) / b;
   // c.w = 1.0;
   gl_FragColor = c;
 }
@@ -50,6 +53,8 @@ void main()	{
 
   render(renderer, writeBuffer, readBuffer, delta, maskActive) {
     this.uniforms["tDiffuse"].value = readBuffer.texture;
+    this.uniforms["colorbits"].value = 4;
+    
     this.quad.material = this.material;
 
     if (this.renderToScreen) {

@@ -176,13 +176,14 @@ varying float z;
 uniform vec3 color;
 void main() {
   // Fake colors for now
-  float z2 = 0.2 + ( 1000. - z ) / 1000. * vColor.x;
-  gl_FragColor = vec4( z2, z2, z2, 1. );
+  // float z2 = 0.2 + ( 1000. - z ) / 1000. * vColor.x;
+//  gl_FragColor = vec4( z2, z2, z2, 1. );
+  gl_FragColor = vColor;
 }
 `;
 
 /* TEXTURE WIDTH FOR SIMULATION */
-var WIDTH = 128;
+var WIDTH = 64;
 var BIRDS = WIDTH * WIDTH;
 // Custom Geometry - using 3 triangles each. No UVs, no normals currently.
 class BirdGeometry extends THREE.BufferGeometry {
@@ -269,7 +270,65 @@ class SFGpGpuPass extends THREE.Pass {
       this.initComputeRenderer();
       this.initBirds();
       this.init = Promise.resolve();
+
+      var parameters = {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat,
+        stencilBuffer: false
+      };
+      var size = renderer.getSize();
+      this.renderTarget = new THREE.WebGLRenderTarget( size.width, size.height, parameters );
+      this.mergeUniforms =  {
+        tDiffuse: { value: null },
+        tDiffuse1: { value: null },
+//        opacity: { value: null }
+      };
+
+      let mergeVertexShader =
+      `
+varying vec2 vUv;
+void main()	{
+		vUv = uv;
+    gl_Position = vec4( position, 1.0 );
+  }
+`;
+      let mergeFragmentShader =
+      `
+uniform sampler2D tDiffuse;
+uniform sampler2D tDiffuse1;
+//uniform float opacity; 
+varying vec2 vUv;
+void main()	{
+  vec4 c = texture2D( tDiffuse, vUv );
+  vec4 c1 = texture2D( tDiffuse1,vUv);
+  //gl_FragColor = c * (1. - opacity) + c1 * opacity;
+  gl_FragColor = c  + c1;
+}
+`;
+      this.mergeMaterial = new THREE.ShaderMaterial({
+      uniforms: this.mergeUniforms,
+      vertexShader: mergeVertexShader,
+      fragmentShader: mergeFragmentShader
+      });
+
+    this.mergeCamera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
+    this.mergeScene = new THREE.Scene();
+
+    this.mergeQuad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), null);
+    this.mergeScene.add(this.mergeQuad);
+
+
 	}
+
+  setSize(width,height){
+    this.width = width;
+    this.height = height;
+    this.windowHalfX = width / 2;
+    this.windowHalfY = height/ 2;
+    this.camera.aspect = width / height;
+    this.renderTarget.setSize(width,height);
+  }
 
   initComputeRenderer(){
     		let gpuCompute = new GPUComputationRenderer( WIDTH, WIDTH, this.renderer );
@@ -315,7 +374,8 @@ class SFGpGpuPass extends THREE.Pass {
       texturePosition: { value: null },
       textureVelocity: { value: null },
       time: { value: 1.0 },
-      delta: { value: 0.0 }
+      delta: { value: 0.0 },
+      tDiffuse: { value: null }
     };
     // ShaderMaterial
     var material = new THREE.ShaderMaterial( {
@@ -370,21 +430,29 @@ class SFGpGpuPass extends THREE.Pass {
     this.velocityUniforms.delta.value = delta;
     this.birdUniforms.time.value = timeMs;
     this.birdUniforms.delta.value = delta;
-    this.velocityUniforms.predator.value.set(Math.cos(Math.sin(time / 2) * Math.PI) * 0.1,Math.sin(Math.cos(time / 2) * Math.PI) * 0.1,0);
+    this.velocityUniforms.predator.value.set(Math.cos(Math.sin(time / 4) * Math.PI) * 0.1,Math.sin(Math.cos(time / 4) * Math.PI) * 0.1,0);
     this.gpuCompute.compute();
     this.birdUniforms.texturePosition.value = this.gpuCompute.getCurrentRenderTarget( this.positionVariable ).texture;
     this.birdUniforms.textureVelocity.value = this.gpuCompute.getCurrentRenderTarget( this.velocityVariable ).texture;
   }
 
 	render(renderer, writeBuffer, readBuffer, delta, maskActive){
+    
+   // this.birdUniforms['tDiffuse'].value = readBuffer.texture;
+    this.mergeUniforms['tDiffuse'].value = readBuffer.texture;
+    this.mergeUniforms['tDiffuse1'].value = this.renderTarget.texture;
+//    this.mergeUniforms['opacity'].value = 0.25;
+    this.mergeQuad.material = this.mergeMaterial;
 
 		if ( this.renderToScreen ) {
 
-			renderer.render( this.scene, this.camera );
+			renderer.render( this.scene, this.camera,this.renderTarget );
+      renderer.render(this.mergeScene,this.mergeCamera);
 
 		} else {
 
-			renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+			renderer.render( this.scene, this.camera,this.renderTarget , this.clear );
+      renderer.render(this.mergeScene,this.mergeCamera,writeBuffer);
 
 		}
 
