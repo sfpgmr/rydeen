@@ -1,8 +1,8 @@
 {
   "name": "electron-quick-start",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
-  "main": "main.js",
+  "description": "ライデン",
+  "main": "./dist/electron/main.js",
   "scripts": {
     "start": "electron ."
   },

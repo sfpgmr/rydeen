@@ -2,15 +2,8 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var fs = _interopDefault(require('fs'));
-var path = _interopDefault(require('path'));
+var electron = _interopDefault(require('electron'));
 
-var fs$1 = fs;
-var path$1 = path;
-
-var index = path$1.join(__dirname, fs$1.readFileSync(path$1.join(__dirname, 'path.txt'), 'utf-8'));
-
-const electron = index;
 // Module to control application life.
 const app = electron.app;
 // Module to create native browser window.
@@ -75,9 +68,3 @@ app.on('activate', function () {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
-
-var main = {
-
-};
-
-module.exports = main;

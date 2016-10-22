@@ -97,7 +97,7 @@
  * @param {WebGLRenderer} renderer The renderer
   */
 "use strict";
-class GPUComputationRenderer{
+export default class GPUComputationRenderer{
 	constructor( sizeX, sizeY, renderer ) {
 
 	this.renderer = renderer;
@@ -370,5 +370,3 @@ class GPUComputationRenderer{
 	}
 
 }
-
-module.exports = GPUComputationRenderer;

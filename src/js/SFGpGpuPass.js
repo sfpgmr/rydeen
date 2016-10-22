@@ -4,7 +4,7 @@
  // Shader Sampleより拝借
  // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
 "use strict";
-var GPUComputationRenderer = require('./GPUComputationRenderer');
+import GPUComputationRenderer  from './GPUComputationRenderer';
 
 const fragmentShaderPosition = `
 uniform float time;
@@ -247,7 +247,7 @@ class BirdGeometry extends THREE.BufferGeometry {
   }
 }
 
-class SFGpGpuPass extends THREE.Pass {
+export default class SFGpGpuPass extends THREE.Pass {
 	constructor(width,height,renderer){
 		  super();
       this.renderer = renderer;
@@ -459,5 +459,4 @@ void main()	{
 	}
 }
 
-module.exports = SFGpGpuPass;
 

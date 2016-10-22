@@ -2,7 +2,7 @@
  * @author alteredq / http://alteredqualia.com/
  */
 
-class GlitchPass extends THREE.Pass {
+export default class GlitchPass extends THREE.Pass {
 	constructor(dt_size = 64){
 		super();
 
@@ -106,6 +106,4 @@ class GlitchPass extends THREE.Pass {
 	}
 
 }
-
-THREE.GlitchPass = GlitchPass;
 

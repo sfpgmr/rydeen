@@ -4,7 +4,7 @@
 // Shader Sampleより拝借
 // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
 "use strict";
-class SF8Pass extends THREE.Pass {
+export default class SF8Pass extends THREE.Pass {
   constructor() {
     super();
     let uniforms = {
@@ -69,5 +69,4 @@ void main()	{
 
   }
 }
-module.exports = SF8Pass;
 

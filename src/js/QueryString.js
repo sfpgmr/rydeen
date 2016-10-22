@@ -1,5 +1,5 @@
 "use strict";
-class QueryString {  
+export default class QueryString {  
   parse(text, sep, eq, isDecode) {
     text = text || location.search.substr(1);
     sep = sep || '&';
@@ -20,5 +20,3 @@ class QueryString {
     }).join(sep);
   }
 };
-
-module.exports = QueryString;

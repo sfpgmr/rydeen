@@ -23,10 +23,13 @@ gulp.task('electron_js', ()=>{
   rollup({
     entry: 'src/js/electron/index.js',
     plugins: [
-      //nodeResolve({ jsnext: true }),
+      nodeResolve({ jsnext: true }),
       commonjs()
+    ],
+    external:[
+      'sharp','electron','events','tween.js'
     ]
-  }).then(function (bundle) {
+  }).then((bundle)=>{
     bundle.write({
       format: 'cjs',
       dest: 'dist/electron/index.js'
@@ -37,23 +40,31 @@ gulp.task('electron_js', ()=>{
     plugins: [
       nodeResolve({ jsnext: true }),
       commonjs()
+    ],
+    external:[
+      'sharp','electron','events','tween.js'
     ]
-  }).then(function (bundle) {
+  }).then((bundle)=> {
     bundle.write({
       format: 'cjs',
       dest: 'dist/electron/main.js'
     });
   });
 
-  gulp.src('./src/js/GlitchPass.js').pipe(gulp.dest('./dist/electron'));
+//  gulp.src('./src/js/GlitchPass.js').pipe(gulp.dest('./dist/electron'));
   gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/electron'));
-  gulp.src('./src/js/AudioAnalyser.js').pipe(gulp.dest('./dist/electron'));
+  //gulp.src('./src/js/AudioAnalyser.js').pipe(gulp.dest('./dist/electron'));
 });
 
 gulp.task('browser_js',()=>{
 
 });
 
+gulp.task('res',()=>{
+  gulp.src('./horse.json')
+    .pipe(gulp.dest('./dist/electron'))
+    .pipe(gulp.dest('./dist/browser'));
+})
 // gulp.task('js',function(){
 //     browserify('./src/js/main.js',{debug:true,extensions: ['.js']})
 //     .transform(babelify,{"plugins": [
@@ -212,7 +223,7 @@ gulp.task('html',function(){
 //   gulp.src('./src/app/*.js').pipe(gulp.dest('./dist/app'));
 // });
 
-gulp.task('default',['html','electron_js','browser_js'/*,'devhtml','devjs','res','postcss','devapp','browser-sync'*/],()=>{
+gulp.task('default',['html','electron_js','browser_js','res'/*,'devhtml','devjs','res','postcss','devapp','browser-sync'*/],()=>{
     watch('./src/js/*.js',()=>gulp.start(['electron_js','browser_js']));
     watch('./src/js/electron/*.js',()=>gulp.start(['electron_js']));
     watch('./src/js/browser/*.js',()=>gulp.start(['browser_js']));

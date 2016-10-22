@@ -4,8 +4,9 @@
 // Shader Sampleより拝借
 // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
 "use strict";
+import * as TWEEN from 'tween.js';
 
-class SFRydeenPass extends THREE.Pass {
+export default class SFRydeenPass extends THREE.Pass {
   constructor(width, height, fps, endTime, sampleRate = 48000) {
     super();
     this.time = 0;
@@ -569,7 +570,4 @@ initParticle(particle, delay) {
     .start(timeMs);
 }  
 }
-
-
-module.exports = SFRydeenPass;
 

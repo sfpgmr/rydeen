@@ -21,25 +21,13 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js" />
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js" />
-/// <reference path="../q.intellisense.js" />
+import denodeify from './denodeify';
+import *  as fs  from 'fs';
 
-var denodeify = require('./denodeify');
-var fs = require('fs');
 var readFile = denodeify(fs.readFile);
 
-(function(global){
-  if(!global.SF){
-    global.SF = {};
-  }
-  if(!global.SF.Audio){
-    global.SF.Audio = {};
-  } else {
-    return;
-  }
-
-  function load(){
+export default class Audio {
+  load() {
     var context = new AudioContext();
 
     function toArrayBuffer(buffer) {
@@ -50,7 +38,7 @@ var readFile = denodeify(fs.readFile);
       }
       return ab;
     }
-
+    let self = this;
    return  readFile('./media/Rydeen3.wav')
     .then(function(data){
       return new Promise((resolve,reject)=>{
@@ -59,14 +47,14 @@ var readFile = denodeify(fs.readFile);
           if(!buffer){
             console.log('error');
           }
-          var source = context.createBufferSource();
+          let source = context.createBufferSource();
+          self.source = source;
           source.buffer = buffer;
           source.connect(context.destination);
-          var analyser = context.createAnalyser();
+          let analyser = context.createAnalyser();
+          self.analyser = analyser;
           source.connect(analyser);
-          SF.Audio.context = context;
-          SF.Audio.analyser = analyser;
-          SF.Audio.source = source;
+          self.context = context;
           resolve(source);
         },function(err){
           reject(err);
@@ -74,5 +62,4 @@ var readFile = denodeify(fs.readFile);
       });
     });
   }
-  SF.Audio.load = load;
-})(window);
+}

@@ -1,6 +1,6 @@
 "use strict";
 
-class SFCapturePass extends THREE.Pass {
+export default class SFCapturePass extends THREE.Pass {
 	constructor(width = 0, height = 0) {
 		super();
 
@@ -43,6 +43,4 @@ class SFCapturePass extends THREE.Pass {
 		}
 	}
 }
-
-module.exports = SFCapturePass;
 

@@ -20,28 +20,29 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-/// <reference path="dsp.js" />
-/// <reference path="pathSerializer.js" />
 // リリース時にはコメントアウトすること
 //document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
 //':35729/livereload.js?snipver=2"></' + 'script>');
 "use strict";
 
-var fs = require('fs');
-var sf = require('./pathSerializer');
-var denodeify = require('./denodeify'); 
-var TWEEN = require('tween.js');
-var readFile = denodeify(fs.readFile);
-var writeFile = denodeify(fs.writeFile); 
-var TimeLine = require('./TimeLine');
-var nativeImage = require('electron').nativeImage;
-var sharp = require('sharp');
-var QueryString = require('./QueryString');
-var SF8Pass = require('./SF8Pass');
-var SFShaderPass = require('./SFShaderPass');
-var SFCapturePass = require('./SFCapturePass');
-var SFRydeen = require('./SFRydeen');
-var SFGpGpuPass = require('./SFGpGpuPass');
+import * as fs from 'fs';
+//import var sf = require('./pathSerializer');
+import denodeify from '../denodeify'; 
+import * as TWEEN from 'tween.js';
+const readFile = denodeify(fs.readFile);
+const writeFile = denodeify(fs.writeFile); 
+import TimeLine  from '../TimeLine';
+import { nativeImage } from 'electron';
+import sharp  from 'sharp';
+import QueryString  from '../QueryString';
+import SF8Pass from '../SF8Pass';
+import SFShaderPass from '../SFShaderPass';
+import SFCapturePass from '../SFCapturePass';
+import SFRydeen from '../SFRydeen';
+import SFGpGpuPass from '../SFGpGpuPass';
+import GlitchPass from '../GlitchPass';
+//import DSP from '../dsp';
+import AudioAnalyser from '../AudioAnalyser';
 
 const SAMPLE_RATE = 48000;
 
@@ -89,6 +90,7 @@ window.addEventListener('load', function () {
   const fps = parseFloat(params.framerate);
   const WIDTH = window.innerWidth , HEIGHT = window.innerHeight;
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  var audioAnalyser = new AudioAnalyser();
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
   renderer.domElement.id = 'console';
@@ -140,7 +142,7 @@ window.addEventListener('load', function () {
   composer.addPass(sfShaderPass);
 
   
-  let glitchPass = new THREE.GlitchPass();
+  let glitchPass = new GlitchPass();
   glitchPass.renderToScreen = false;
   glitchPass.enabled = true;
   glitchPass.goWild = false;
@@ -513,10 +515,10 @@ window.addEventListener('load', function () {
   //  renderer.render(scene, camera);
   //};
   Promise.all([animMain.init,gpuPass.init])
-  .then(SF.Audio.load)
+  .then(audioAnalyser.load.bind(audioAnalyser))
   .then(()=>{
-    chL = SF.Audio.source.buffer.getChannelData(0);
-    chR = SF.Audio.source.buffer.getChannelData(1);
+    chL = audioAnalyser.source.buffer.getChannelData(0);
+    chR = audioAnalyser.source.buffer.getChannelData(1);
     animMain.chL = chL;
     animMain.chR = chR;
     renderToFile(preview);

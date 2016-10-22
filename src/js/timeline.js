@@ -1,5 +1,5 @@
-var EventEmitter = require("events").EventEmitter;
-class TimeLine extends EventEmitter
+import {EventEmitter} from "events";
+export default class TimeLine extends EventEmitter
 {
   constructor(events = []){
     super();
@@ -29,4 +29,3 @@ class TimeLine extends EventEmitter
     }
   }
 }
-module.exports = TimeLine;

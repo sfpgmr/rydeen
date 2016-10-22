@@ -76,7 +76,7 @@ let uniforms = {
 //     scene.add( mesh );
 //   }
 
-class SFShaderPass extends THREE.Pass {
+export default class SFShaderPass extends THREE.Pass {
 	constructor(width,height){
 		super();
 
@@ -113,6 +113,4 @@ class SFShaderPass extends THREE.Pass {
 
 	}
 }
-
-module.exports = SFShaderPass;
 
