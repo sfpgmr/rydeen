@@ -202,7 +202,7 @@ gulp.task('snap',function(){
   } catch (e){
     
   }
-  gulp.src('./dist/*.*').pipe(gulp.dest(destdir));
+  gulp.src('./dist/browser/*.*').pipe(gulp.dest(destdir));
 });
 
 gulp.task('browser-sync', function() {
