@@ -192,29 +192,18 @@ gulp.task('html',function(){
 //   gulp.src('./src/res/*.json').pipe(gulp.dest('./dist/app/res'));
 // });
 
-// // devverディレクトリへのコピー
-// gulp.task('devver',function(){
-//   var date = new Date();
-//   var destdir = './devver/' + date.getUTCFullYear() + ('0' + (date.getMonth() + 1)).slice(-2)  + ('0' + date.getDate()).slice(-2);
+// devverディレクトリへのコピー
+gulp.task('snap',function(){
+  var date = new Date();
+  var destdir = './dist/browser/' + date.getUTCFullYear() + ('0' + (date.getMonth() + 1)).slice(-2)  + ('0' + date.getDate()).slice(-2);
   
-//   try {
-//     fs.mkdirSync(destdir);
-//   } catch (e){
+  try {
+    fs.mkdirSync(destdir);
+  } catch (e){
     
-//   }
-  
-//   try {
-//     fs.mkdirSync(destdir + '/js');
-//     fs.mkdirSync(destdir + '/res');
-//   } catch (e){
-    
-//   }
-  
-//   gulp.src('./dist/*.html').pipe(gulp.dest(destdir));
-//   gulp.src('./dist/js/*.js').pipe(gulp.dest(destdir + '/js'));
-//   gulp.src('./dist/res/*.json').pipe(gulp.dest(destdir + '/res'));
-//   gulp.src('./dist/css/*.*').pipe(gulp.dest(destdir + '/css'));
-// });
+  }
+  gulp.src('./dist/*.*').pipe(gulp.dest(destdir));
+});
 
 gulp.task('browser-sync', function() {
     browserSync({
