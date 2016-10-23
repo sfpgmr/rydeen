@@ -57,7 +57,22 @@ gulp.task('electron_js', ()=>{
 });
 
 gulp.task('browser_js',()=>{
-
+  rollup({
+    entry: 'src/js/browser/index.js',
+    plugins: [
+      nodeResolve({ jsnext: true }),
+      commonjs()
+    ],
+    external:[
+      'sharp','electron','events'
+    ]
+  }).then((bundle)=>{
+    bundle.write({
+      format: 'iife',
+      dest: 'dist/browser/index.js'
+    });
+  });
+  gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/browser'));
 });
 
 gulp.task('res',()=>{
@@ -201,19 +216,19 @@ gulp.task('html',function(){
 //   gulp.src('./dist/css/*.*').pipe(gulp.dest(destdir + '/css'));
 // });
 
-// gulp.task('browser-sync', function() {
-//     browserSync({
-//         server: {
-//              baseDir: "./dist/"
-//             ,index  : "index.html"
-//         },
-//         files:['./dist/**/*.*']
-//     });
-// });
+gulp.task('browser-sync', function() {
+    browserSync({
+        server: {
+             baseDir: "./dist/browser/"
+            ,index  : "index.html"
+        },
+        files:['./dist/browser/**/*.*']
+    });
+});
 
-// gulp.task('bs-reload', function () {
-//     browserSync.reload();
-// });
+gulp.task('bs-reload', function () {
+    browserSync.reload();
+});
 
 // gulp.task('devapp',()=>{
 //   try {
@@ -223,7 +238,7 @@ gulp.task('html',function(){
 //   gulp.src('./src/app/*.js').pipe(gulp.dest('./dist/app'));
 // });
 
-gulp.task('default',['html','electron_js','browser_js','res'/*,'devhtml','devjs','res','postcss','devapp','browser-sync'*/],()=>{
+gulp.task('default',['html','electron_js','browser_js','res','browser-sync'/*,'devhtml','devjs','res','postcss','devapp','browser-sync'*/],()=>{
     watch('./src/js/*.js',()=>gulp.start(['electron_js','browser_js']));
     watch('./src/js/electron/*.js',()=>gulp.start(['electron_js']));
     watch('./src/js/browser/*.js',()=>gulp.start(['browser_js']));

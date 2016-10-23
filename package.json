@@ -45,6 +45,7 @@
     "watchify": "^3.6.1"
   },
   "dependencies": {
+    "eventemitter3": "^2.0.2",
     "midifile": "^1.0.4",
     "mixin": "^0.2.0",
     "sharp": "^0.16.0",

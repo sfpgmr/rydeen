@@ -282,7 +282,7 @@ export default class SFGpGpuPass extends THREE.Pass {
       this.mergeUniforms =  {
         tDiffuse: { value: null },
         tDiffuse1: { value: null },
-//        opacity: { value: null }
+        opacity: { value: 1.0 }
       };
 
       let mergeVertexShader =
@@ -297,13 +297,13 @@ void main()	{
       `
 uniform sampler2D tDiffuse;
 uniform sampler2D tDiffuse1;
-//uniform float opacity; 
+uniform float opacity; 
 varying vec2 vUv;
 void main()	{
   vec4 c = texture2D( tDiffuse, vUv );
   vec4 c1 = texture2D( tDiffuse1,vUv);
-  //gl_FragColor = c * (1. - opacity) + c1 * opacity;
-  gl_FragColor = c  + c1;
+  gl_FragColor = c * (1. - opacity) + c1 * opacity;
+  //gl_FragColor = c  + c1;
 }
 `;
       this.mergeMaterial = new THREE.ShaderMaterial({
@@ -327,6 +327,7 @@ void main()	{
     this.windowHalfX = width / 2;
     this.windowHalfY = height/ 2;
     this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
     this.renderTarget.setSize(width,height);
   }
 

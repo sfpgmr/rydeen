@@ -89,13 +89,18 @@ export default class SFShaderPass extends THREE.Pass {
 			fragmentShader: fragmentShader
 		} );
 
-		this.camera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
+		this.camera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 0, 1 );
 		this.scene  = new THREE.Scene();
 
 		this.quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), null );
 		this.scene.add( this.quad );
 
 	}
+
+  setSize(width,height){
+		this.uniforms.resolution.value.x = width;
+		this.uniforms.resolution.value.y = height;
+  }
 
 	render(renderer, writeBuffer, readBuffer, delta, maskActive){
 		this.uniforms[ "tDiffuse" ].value = readBuffer.texture;

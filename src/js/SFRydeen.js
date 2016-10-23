@@ -569,5 +569,11 @@ initParticle(particle, delay) {
     .to({ x: 0.01, y: 0.01 }, 5000)
     .start(timeMs);
 }  
+
+setSize(width,height){
+  this.camera.aspect = width / height;
+  this.camera.updateProjectionMatrix();
+}
+
 }
 

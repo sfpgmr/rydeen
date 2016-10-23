@@ -88,7 +88,7 @@ window.addEventListener('load', function () {
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == 'true';
   const fps = parseFloat(params.framerate);
-  const WIDTH = window.innerWidth , HEIGHT = window.innerHeight;
+  const WIDTH = 1920 , HEIGHT = 1080;
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
   var audioAnalyser = new AudioAnalyser();
   renderer.setSize(WIDTH, HEIGHT);
