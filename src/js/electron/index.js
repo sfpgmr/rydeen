@@ -28,7 +28,7 @@
 import * as fs from 'fs';
 //import var sf = require('./pathSerializer');
 import denodeify from '../denodeify'; 
-import * as TWEEN from 'tween.js';
+import TWEEN from 'tween.js';
 const readFile = denodeify(fs.readFile);
 const writeFile = denodeify(fs.writeFile); 
 import TimeLine  from '../TimeLine';
@@ -133,7 +133,7 @@ window.addEventListener('load', function () {
 
   let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   gpuPass.renderToScreen = false;
-  gpuPass.enabled = true;
+  gpuPass.enabled = false;
   composer.addPass(gpuPass);
 
   let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);

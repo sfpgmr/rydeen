@@ -4,6 +4,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var fs = require('fs');
 var TWEEN = require('tween.js');
+var TWEEN__default = TWEEN['default'];
 var electron = require('electron');
 var sharp = _interopDefault(require('sharp'));
 
@@ -2308,7 +2309,7 @@ window.addEventListener('load', function () {
 
   let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   gpuPass.renderToScreen = false;
-  gpuPass.enabled = true;
+  gpuPass.enabled = false;
   composer.addPass(gpuPass);
 
   let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
@@ -2358,7 +2359,7 @@ window.addEventListener('load', function () {
   }
 
   function fillEffect(){
-    return  new TWEEN.Tween({})
+    return  new TWEEN__default.Tween({})
       .to({},40)
       .onStart(()=>{
         glitchPass.goWild = true;
@@ -2370,7 +2371,7 @@ window.addEventListener('load', function () {
 
   // 間奏
   function intEffect(){
-    return  new TWEEN.Tween({})
+    return  new TWEEN__default.Tween({})
       .to({},25.175 * 1000)
       .onUpdate(()=>{
         dotScreen.uniforms['scale'].value = (chR[waveCount] + chL[waveCount]) * 8 + 1;
@@ -2384,7 +2385,7 @@ window.addEventListener('load', function () {
   }
 
   function intEffect2(){
-    return  new TWEEN.Tween({})
+    return  new TWEEN__default.Tween({})
       .to({},80)
       .onUpdate(()=>{
       })
@@ -2637,7 +2638,7 @@ window.addEventListener('load', function () {
     }
     let timeMs = time * 1000;
     timeline.update(timeMs);
-    TWEEN.update(timeMs);
+    TWEEN__default.update(timeMs);
     if(preview){
       d3.select('#stat').text(time);
    }
