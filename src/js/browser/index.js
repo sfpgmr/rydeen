@@ -162,7 +162,7 @@ window.addEventListener('load', function () {
   }
 
   function fillEffect(){
-    return  new TWEEN.Tween({})
+    return  new TWEEN.default.Tween({})
       .to({},40)
       .onStart(()=>{
         glitchPass.goWild = true;
@@ -174,7 +174,7 @@ window.addEventListener('load', function () {
 
   // 間奏
   function intEffect(){
-    return  new TWEEN.Tween({})
+    return  new TWEEN.default.Tween({})
       .to({},25.175 * 1000)
       .onUpdate(()=>{
         dotScreen.uniforms['scale'].value = (chR[waveCount] + chL[waveCount]) * 8 + 1;
@@ -188,7 +188,7 @@ window.addEventListener('load', function () {
   }
 
   function intEffect2(){
-    return  new TWEEN.Tween({})
+    return  new TWEEN.default.Tween({})
       .to({},80)
       .onUpdate(()=>{
       })

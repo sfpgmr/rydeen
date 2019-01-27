@@ -19,44 +19,54 @@ const nodeResolve = require('rollup-plugin-node-resolve');
 
 
 // JSのビルド
-gulp.task('electron_js', ()=>{
-  rollup({
+gulp.task('electron_js', (done)=>{
+  const tasks = [];
+  
+  tasks.push(rollup({
     entry: 'src/js/electron/index.js',
     plugins: [
       nodeResolve({ jsnext: true }),
       commonjs()
     ],
     external:[
-      'sharp','electron','events','tween.js'
+      'sharp','electron','events','tween',
     ]
   }).then((bundle)=>{
     bundle.write({
       format: 'cjs',
       dest: 'dist/electron/index.js'
     });
-  });
-  rollup({
+  }));
+
+  tasks.push(rollup({
     entry: 'src/js/electron/main.js',
     plugins: [
       nodeResolve({ jsnext: true }),
       commonjs()
     ],
     external:[
-      'sharp','electron','events','tween.js'
+      'sharp','electron','events','tween'
     ]
   }).then((bundle)=> {
     bundle.write({
       format: 'cjs',
       dest: 'dist/electron/main.js'
     });
+  }));
+
+  Promise.all(tasks)
+  .then(()=>{
+//  gulp.src('./src/js/GlitchPass.js').pipe(gulp.dest('./dist/electron'));
+    gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/electron'));
+    done();
   });
 
 //  gulp.src('./src/js/GlitchPass.js').pipe(gulp.dest('./dist/electron'));
-  gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/electron'));
+//  gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/electron'));
   //gulp.src('./src/js/AudioAnalyser.js').pipe(gulp.dest('./dist/electron'));
 });
 
-gulp.task('browser_js',()=>{
+gulp.task('browser_js',(done)=>{
   rollup({
     entry: 'src/js/browser/index.js',
     plugins: [
@@ -71,14 +81,16 @@ gulp.task('browser_js',()=>{
       format: 'iife',
       dest: 'dist/browser/index.js'
     });
+    gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/browser'));
+    done();
   });
-  gulp.src('./src/js/dsp.js').pipe(gulp.dest('./dist/browser'));
 });
 
-gulp.task('res',()=>{
+gulp.task('res',(done)=>{
   gulp.src('./horse.json')
     .pipe(gulp.dest('./dist/electron'))
     .pipe(gulp.dest('./dist/browser'));
+    done();
 })
 // gulp.task('js',function(){
 //     browserify('./src/js/main.js',{debug:true,extensions: ['.js']})
@@ -177,9 +189,10 @@ gulp.task('res',()=>{
 // });
 
 //HTMLのコピー
-gulp.task('html',function(){
+gulp.task('html',(done)=>{
   gulp.src('./src/html/electron/*.html').pipe(gulp.dest('./dist/electron'));
   gulp.src('./src/html/browser/*.html').pipe(gulp.dest('./dist/browser'));
+  done();
 });
 
 // gulp.task('devhtml',function(){
@@ -193,7 +206,7 @@ gulp.task('html',function(){
 // });
 
 // devverディレクトリへのコピー
-gulp.task('snap',function(){
+gulp.task('snap',(done)=>{
   var date = new Date();
   var destdir = './dist/browser/' + date.getUTCFullYear() + ('0' + (date.getMonth() + 1)).slice(-2)  + ('0' + date.getDate()).slice(-2);
   
@@ -203,9 +216,10 @@ gulp.task('snap',function(){
     
   }
   gulp.src('./dist/browser/*.*').pipe(gulp.dest(destdir));
+  done();
 });
 
-gulp.task('browser-sync', function() {
+gulp.task('browser-sync', (done)=> {
     browserSync({
         server: {
              baseDir: "./dist/browser/"
@@ -213,10 +227,12 @@ gulp.task('browser-sync', function() {
         },
         files:['./dist/browser/**/*.*']
     });
+    done();
 });
 
-gulp.task('bs-reload', function () {
+gulp.task('bs-reload', (done)=> {
     browserSync.reload();
+    done();
 });
 
 // gulp.task('devapp',()=>{
@@ -227,7 +243,7 @@ gulp.task('bs-reload', function () {
 //   gulp.src('./src/app/*.js').pipe(gulp.dest('./dist/app'));
 // });
 
-gulp.task('default',['html','electron_js','browser_js','res','browser-sync'/*,'devhtml','devjs','res','postcss','devapp','browser-sync'*/],()=>{
+gulp.task('default',gulp.series('html','electron_js','browser_js','res'/*,'browser-sync','devhtml','devjs','res','postcss','devapp','browser-sync'*/,(done)=>{
     watch('./src/js/*.js',()=>gulp.start(['electron_js','browser_js']));
     watch('./src/js/electron/*.js',()=>gulp.start(['electron_js']));
     watch('./src/js/browser/*.js',()=>gulp.start(['browser_js']));
@@ -238,5 +254,6 @@ gulp.task('default',['html','electron_js','browser_js','res','browser-sync'/*,'d
     // watch('./src/app/js/*.js',()=>gulp.start(['devjs']));
     // watch('./src/app/*.js',()=>gulp.start(['devapp']));
     // watch('./src/app/html/*.html',()=>gulp.start(['devhtml']));
-});
+    done();
+}));
 })();

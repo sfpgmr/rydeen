@@ -52,7 +52,7 @@ export default class SFRydeenPass extends THREE.Pass {
     scene.add(light2);
     this.light2 = light2;
 
-    var loader = new THREE.JSONLoader();
+    var loader = new THREE.LegacyJSONLoader();
     var horseAnimSpeed = (60.0 / (143.0));
     var meshes = [];
     this.meshes = meshes;
@@ -291,7 +291,7 @@ export default class SFRydeenPass extends THREE.Pass {
 
   // 馬のフェードイン・フェードアウト
   horseFadein() {
-    let fadein = new TWEEN.Tween({ opacity: 0 });
+    let fadein = new TWEEN.default.Tween({ opacity: 0 });
     let self = this;
     fadein.to({ opacity: 1.0 }, 5000);
     fadein.onUpdate(function () {
@@ -306,7 +306,7 @@ export default class SFRydeenPass extends THREE.Pass {
   }
 
   horseFadeout() {
-    let fadeout = new TWEEN.Tween({ opacity: 1.0 });
+    let fadeout = new TWEEN.default.Tween({ opacity: 1.0 });
     let self = this;
     fadeout.to({ opacity: 0.0 }, 3000);
     fadeout.onUpdate(function () {
@@ -322,7 +322,7 @@ export default class SFRydeenPass extends THREE.Pass {
 
   // シリンダーの回転
   rotateCilynder() {
-    let rotateCilynder = new TWEEN.Tween({ time: 0 });
+    let rotateCilynder = new TWEEN.default.Tween({ time: 0 });
     let self = this;
     var ry = 0;
     rotateCilynder
@@ -342,7 +342,7 @@ export default class SFRydeenPass extends THREE.Pass {
   // カメラワーク
 
   cameraTween() {
-    let cameraTween = new TWEEN.Tween({ x: 0, y: 0, z: 1000, opacity: 1.0 });
+    let cameraTween = new TWEEN.default.Tween({ x: 0, y: 0, z: 1000, opacity: 1.0 });
     cameraTween.to({ x: 0, z: this.radius, y: 2000, opacity: 0.0 }, 1000);
     self = this;
     //cameraTween.delay(20.140 * 1000 - 1500);
@@ -360,7 +360,7 @@ export default class SFRydeenPass extends THREE.Pass {
     cameraTween.onComplete(function () {
       self.wmesh.visible = false;
     });
-    var cameraTween11 = new TWEEN.Tween({ theta: 0 });
+    var cameraTween11 = new TWEEN.default.Tween({ theta: 0 });
     cameraTween11.to({ theta: -2 * Math.PI }, 11587);
     cameraTween11.onUpdate(function () {
       self.camera.position.x = Math.sin(this.theta) * self.radius;
@@ -371,7 +371,7 @@ export default class SFRydeenPass extends THREE.Pass {
   }
 
   cameraTween2() {
-    let cameraTween2 = new TWEEN.Tween({ x: 0, y: 2000, z: 1000, opacity: 0.0 });
+    let cameraTween2 = new TWEEN.default.Tween({ x: 0, y: 2000, z: 1000, opacity: 0.0 });
     let self = this;
     cameraTween2.to({ x: 0, y: 0, opacity: 1.0 }, 1000);
     cameraTween2.onUpdate(function () {
@@ -392,14 +392,14 @@ export default class SFRydeenPass extends THREE.Pass {
   }
 
   cameraTween4() {
-    let cameraTween4 = new TWEEN.Tween({ x: 0, y: 2000, z: 1000, opacity: 1.0 });
+    let cameraTween4 = new TWEEN.default.Tween({ x: 0, y: 2000, z: 1000, opacity: 1.0 });
     let self = this;
     cameraTween4.to({ x: 0, y: 1000, z: 1000 }, 1000);
     cameraTween4.onUpdate(function () {
       self.camera.position.x = this.x;
       self.camera.position.y = this.y;
     });
-    var cameraTween41 = new TWEEN.Tween({ theta: 0 });
+    var cameraTween41 = new TWEEN.default.Tween({ theta: 0 });
     cameraTween41.to({ theta: 2 * Math.PI }, 18300);
     cameraTween41.onUpdate(function () {
       self.camera.position.x = Math.sin(this.theta) * self.radius;
@@ -549,7 +549,7 @@ initParticle(particle, delay) {
   var delay = delay !== undefined ? delay : 0;
   particle.position.set(Math.random() * 500 - 250, Math.random() * 500 - 250, -4000);
   particle.scale.x = particle.scale.y = Math.random() * 500 + 50;
-  new TWEEN.Tween(particle)
+  new TWEEN.default.Tween(particle)
     .delay(delay)
     .to({}, 5000)
     .onComplete(this.initParticle.bind(this,particle,0))
@@ -558,13 +558,13 @@ initParticle(particle, delay) {
     })
     .start(timeMs);
 
-  new TWEEN.Tween(particle.position)
+  new TWEEN.default.Tween(particle.position)
     .delay(delay)
     .to({ x: Math.random() * 500 - 250, y: Math.random() * 500 - 250, z: Math.random() * 1000 + 500 }, 10000)
     .to({ z: Math.random() * 1000 + 500 }, 5000)
     .start(timeMs);
 
-  new TWEEN.Tween(particle.scale)
+  new TWEEN.default.Tween(particle.scale)
     .delay(delay)
     .to({ x: 0.01, y: 0.01 }, 5000)
     .start(timeMs);
