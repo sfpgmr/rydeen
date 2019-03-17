@@ -1,0 +1,7 @@
+ffmpeg -i Rydeen20190224-2.aif -filter_complex "[0:a]asplit[a][b];[a]showwaves=split_channels=1:s=1920x1080:r=60:mode=line,format=yuv420p[waves];[b]showspectrum=s=1920x1080:mode=separate:scale=cbrt:orientation=vertical:overlap=1:color=intensity[spectrum]; [spectrum][waves] overlay,format=yuv420p[vo]" -map "[vo]" -map 0:a -ac 2 -ar 96000 -ab 384k -vb 15m -c:v nvenc_h264 output.mp4
+
+asplit=2[out1][a]; [a]showspectrum=color=channel:scale=cbrt:orientation=vertical:overlap=1:s=2048x1024[out0]
+
+ffplay -f lavfi "amovie=Rydeen20190224-2.aif,asplit=3[out1][a][b]; [a]showwaves=s=1920x1080:split_channels=1:r=60:mode=line[waves]; [b]showspectrum=s=1920x1080:mode=separate:scale=cbrt:orientation=vertical:overlap=1:color=intensity[spectrum]; [spectrum][waves] overlay,format=yuv420p[out0]"
+
+ffmpeg -i Rydeen20190224-2.aif -filter_complex "[0:a]asplit[a][b];[a]showwaves=split_channels=1:s=1920x1080:r=60:mode=line,format=yuv420p,colorkey=black:0.01:1[waves];[b]showspectrum=fps=60:s=1920x1080:mode=separate:scale=cbrt:orientation=vertical:overlap=1:color=intensity[spectrum]; [spectrum][waves] overlay,format=yuv420p[vo];[vo]drawtext=fontfile='YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.25:boxborderw=5:text='YMO - Rydeen (78) performed by SFPG',fade=t=out:st=262:d=4[vo1]" -map "[vo1]" -map 0:a -ac 2 -ar 96000 -ab 384k -vb 15m -c:v nvenc_h264 output.mp4

@@ -136,6 +136,7 @@ export default class SFRydeenPass extends THREE.Pass {
     this.init = (() => {
       return new Promise((resolve, reject) => {
         loader.load("./horse.json", (geometry) => {
+          //geometry = new THREE.BufferGeometry().fromGeometry(geometry);
 
           // meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
           //   vertexColors: THREE.FaceColors,
