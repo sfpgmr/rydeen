@@ -448,13 +448,21 @@ void main()	{
 
 		if ( this.renderToScreen ) {
 
-			renderer.render( this.scene, this.camera,this.renderTarget );
+      const backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(this.renderTarget);
+      renderer.render( this.scene, this.camera );
+			renderer.setRenderTarget(backup);
       renderer.render(this.mergeScene,this.mergeCamera);
 
 		} else {
 
-			renderer.render( this.scene, this.camera,this.renderTarget , this.clear );
+      const backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(this.renderTarget);
+      this.clear && renderer.clear();
+			renderer.render( this.scene, this.camera);
+			renderer.setRenderTarget(writeBuffer);
       renderer.render(this.mergeScene,this.mergeCamera,writeBuffer);
+			renderer.setRenderTarget(backup);
 
 		}
 

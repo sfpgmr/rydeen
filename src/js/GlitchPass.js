@@ -74,12 +74,11 @@ export default class GlitchPass extends THREE.Pass {
 
 		} else {
 			
-			this.clear && renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+			renderer.render( this.scene, this.camera);
 			renderer.setRenderTarget(backup);
-			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
-
 		}
 
 	}

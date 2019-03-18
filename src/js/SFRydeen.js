@@ -569,9 +569,10 @@ export default class SFRydeenPass extends THREE.Pass {
 
     } else {
 
-			renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			renderer.clear()
+      renderer.render(this.scene, this.camera);
 			renderer.setRenderTarget(backup);
 
       //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
