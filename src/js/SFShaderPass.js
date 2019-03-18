@@ -111,8 +111,12 @@ export default class SFShaderPass extends THREE.Pass {
 			renderer.render( this.scene, this.camera );
 
 		} else {
+			this.clear && renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
 
-			renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
 
 		}
 

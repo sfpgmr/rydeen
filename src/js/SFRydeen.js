@@ -52,7 +52,6 @@ export default class SFRydeenPass extends THREE.Pass {
     scene.add(light2);
     this.light2 = light2;
 
-    var loader = new THREE.LegacyJSONLoader();
     var horseAnimSpeed = (60.0 / (143.0));
     var meshes = [];
     this.meshes = meshes;
@@ -133,45 +132,15 @@ export default class SFRydeenPass extends THREE.Pass {
     this.horseGroup = horseGroup;
 
     // 馬メッシュのロード
+
     this.init = (() => {
       return new Promise((resolve, reject) => {
-        loader.load("./horse.json", (geometry) => {
-          //geometry = new THREE.BufferGeometry().fromGeometry(geometry);
-
-          // meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
-          //   vertexColors: THREE.FaceColors,
-          //   morphTargets: true
-          // } ) );
-          //geometry.computeVertexNormals();
-          let mat = new THREE.MeshPhongMaterial({
-            // vertexColors: THREE.FaceColors,
-            // shading: THREE.SmoothShading,
-            //transparent:true,
-            //map:ffttexture,
-            side: THREE.DoubleSide,
-            //morphNormals: true,
-            // color: 0xffffff,
-            morphTargets: true,
-            transparent: true,
-            opacity: 0.0,
-            //blending:THREE.AdditiveBlending,
-            color: new THREE.Color(1.0, 0.5, 0.0),
-            //morphNormals: true,
-            //shading: THREE.SmoothShading
-            //morphTargets: true
-          });
-          horseMaterial = mat;
-          //mat.reflectivity = 1.0;
-          //mat.specular = new THREE.Color(0.5,0.5,0.5);
-          //mat.emissive = new THREE.Color(0.5,0,0);
-          //        mat.wireframe = true;
-          meshes[0] = new THREE.Mesh(geometry, mat);
-
-
-          meshes[0].scale.set(1.5, 1.5, 1.5);
+        const loader = new THREE.GLTFLoader();
+        loader.load( "./horse.glb", function( gltf ) {
+          meshes[0] = gltf.scene.children[ 0 ];
+          meshes[0].scale.set( 1.5, 1.5, 1.5 );
           meshes[0].rotation.y = 0.5 * Math.PI;
           meshes[0].position.y = 0;
-
 
           for (let i = 1; i < HORSE_NUM; ++i) {
             meshes[i] = meshes[0].clone();
@@ -201,13 +170,94 @@ export default class SFRydeenPass extends THREE.Pass {
             horseGroup.add(meshes[i]);
             //scene.add( meshes[i] );
             mixers[i] = new THREE.AnimationMixer(meshes[i]);
-            let clip = THREE.AnimationClip.CreateFromMorphTargetSequence('gallop', geometry.morphTargets, fps);
+            //let clip = THREE.AnimationClip.CreateFromMorphTargetSequence('gallop', geometry.morphTargets, fps);
+            let clip = gltf.animations[ 0 ].clone();
             mixers[i].clipAction(clip).setDuration(horseAnimSpeed).play();
           }
           horseGroup.visible = false;
           scene.add(horseGroup);
           resolve();
-        });
+
+    
+          // mixer = new THREE.AnimationMixer( mesh );
+    
+          // mixer.clipAction( gltf.animations[ 0 ] ).setDuration( 1 ).play();
+    
+        } );
+    
+        // loader.load("./horse.glb", (gltf) => {
+        //   //geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+
+        //   // meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
+        //   //   vertexColors: THREE.FaceColors,
+        //   //   morphTargets: true
+        //   // } ) );
+        //   //geometry.computeVertexNormals();
+        //   let mat = new THREE.MeshPhongMaterial({
+        //     // vertexColors: THREE.FaceColors,
+        //     // shading: THREE.SmoothShading,
+        //     //transparent:true,
+        //     //map:ffttexture,
+        //     side: THREE.DoubleSide,
+        //     //morphNormals: true,
+        //     // color: 0xffffff,
+        //     morphTargets: true,
+        //     transparent: true,
+        //     opacity: 0.0,
+        //     //blending:THREE.AdditiveBlending,
+        //     color: new THREE.Color(1.0, 0.5, 0.0),
+        //     //morphNormals: true,
+        //     //shading: THREE.SmoothShading
+        //     //morphTargets: true
+        //   });
+        //   horseMaterial = mat;
+        //   //mat.reflectivity = 1.0;
+        //   //mat.specular = new THREE.Color(0.5,0.5,0.5);
+        //   //mat.emissive = new THREE.Color(0.5,0,0);
+        //   //        mat.wireframe = true;
+        //   meshes[0] = new THREE.Mesh(geometry, mat);
+
+
+        //   meshes[0].scale.set(1.5, 1.5, 1.5);
+        //   meshes[0].rotation.y = 0.5 * Math.PI;
+        //   meshes[0].position.y = 0;
+
+
+        //   for (let i = 1; i < HORSE_NUM; ++i) {
+        //     meshes[i] = meshes[0].clone();
+        //     //           meshes[i].material =  new THREE.MeshPhongMaterial( {
+        //     //         // vertexColors: THREE.FaceColors,
+        //     //          // shading: THREE.SmoothShading,
+        //     //          //transparent:true,
+        //     //          //map:ffttexture,
+        //     //         // side:THREE.DoubleSide,
+        //     // //            morphNormals: true,
+        //     //            // color: 0xffffff,
+        //     // 						morphTargets: true,
+        //     //             transparent: true,
+        //     //             opacity:0.5,
+        //     //                         color:new THREE.Color(1.0,0.5,0.0)
+
+        //     // 						//morphNormals: true,
+        //     // 						//shading: THREE.SmoothShading//,
+        //     //             //morphTargets: true
+        //     //         } );;
+        //     meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 10)) * 450;
+        //     meshes[i].position.z = (Math.floor((Math.random() - 0.5) * 10)) * 150;
+        //     meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
+        //   }
+
+        //   for (let i = 0; i < HORSE_NUM; ++i) {
+        //     horseGroup.add(meshes[i]);
+        //     //scene.add( meshes[i] );
+        //     mixers[i] = new THREE.AnimationMixer(meshes[i]);
+        //     let clip = THREE.AnimationClip.CreateFromMorphTargetSequence('gallop', geometry.morphTargets, fps);
+        //     mixers[i].clipAction(clip).setDuration(horseAnimSpeed).play();
+        //   }
+        //   horseGroup.visible = false;
+        //   scene.add(horseGroup);
+        //   resolve();
+        //});
       });
     })();
 
@@ -519,7 +569,12 @@ export default class SFRydeenPass extends THREE.Pass {
 
     } else {
 
-      renderer.render(this.scene, this.camera, writeBuffer, this.clear);
+			renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
+
+      //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
     }
 

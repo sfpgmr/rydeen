@@ -3,7 +3,7 @@
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var fs = require('fs');
-var electron = require('electron');
+require('electron');
 var sharp = _interopDefault(require('sharp'));
 
 function denodeify (nodeFunc){
@@ -148,7 +148,6 @@ TWEEN.Tween = function (object) {
 	var _repeatDelayTime;
 	var _yoyo = false;
 	var _isPlaying = false;
-	var _reversed = false;
 	var _delayTime = 0;
 	var _startTime = null;
 	var _easingFunction = TWEEN.Easing.Linear.None;
@@ -416,10 +415,6 @@ TWEEN.Tween = function (object) {
 
 					_valuesStart[property] = _valuesStartRepeat[property];
 
-				}
-
-				if (_yoyo) {
-					_reversed = !_reversed;
 				}
 
 				if (_repeatDelayTime !== undefined) {
@@ -921,8 +916,6 @@ TWEEN.Interpolation = {
 });
 
 var index = createCommonjsModule(function (module) {
-'use strict';
-
 var has = Object.prototype.hasOwnProperty
   , prefix = '~';
 
@@ -1350,8 +1343,11 @@ void main()	{
       renderer.render(this.scene, this.camera);
 
     } else {
-
-      renderer.render(this.scene, this.camera, writeBuffer, this.clear);
+			this.clear && renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
+      //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
     }
 
@@ -1469,8 +1465,12 @@ class SFShaderPass extends THREE.Pass {
 			renderer.render( this.scene, this.camera );
 
 		} else {
+			this.clear && renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
 
-			renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
 
 		}
 
@@ -1516,7 +1516,11 @@ class SFCapturePass extends THREE.Pass {
 		if (this.renderToScreen) {
 			renderer.render(this.scene, this.camera);
 		} else {
-			renderer.render(this.scene, this.camera, writeBuffer, this.clear);
+			this.clear && renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);			
+			//renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 		}
 	}
 }
@@ -1572,7 +1576,6 @@ class SFRydeenPass extends THREE.Pass {
     scene.add(light2);
     this.light2 = light2;
 
-    var loader = new THREE.LegacyJSONLoader();
     var horseAnimSpeed = (60.0 / (143.0));
     var meshes = [];
     this.meshes = meshes;
@@ -1653,44 +1656,15 @@ class SFRydeenPass extends THREE.Pass {
     this.horseGroup = horseGroup;
 
     // 馬メッシュのロード
+
     this.init = (() => {
       return new Promise((resolve, reject) => {
-        loader.load("./horse.json", (geometry) => {
-
-          // meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
-          //   vertexColors: THREE.FaceColors,
-          //   morphTargets: true
-          // } ) );
-          //geometry.computeVertexNormals();
-          let mat = new THREE.MeshPhongMaterial({
-            // vertexColors: THREE.FaceColors,
-            // shading: THREE.SmoothShading,
-            //transparent:true,
-            //map:ffttexture,
-            side: THREE.DoubleSide,
-            //morphNormals: true,
-            // color: 0xffffff,
-            morphTargets: true,
-            transparent: true,
-            opacity: 0.0,
-            //blending:THREE.AdditiveBlending,
-            color: new THREE.Color(1.0, 0.5, 0.0),
-            //morphNormals: true,
-            //shading: THREE.SmoothShading
-            //morphTargets: true
-          });
-          horseMaterial = mat;
-          //mat.reflectivity = 1.0;
-          //mat.specular = new THREE.Color(0.5,0.5,0.5);
-          //mat.emissive = new THREE.Color(0.5,0,0);
-          //        mat.wireframe = true;
-          meshes[0] = new THREE.Mesh(geometry, mat);
-
-
-          meshes[0].scale.set(1.5, 1.5, 1.5);
+        const loader = new THREE.GLTFLoader();
+        loader.load( "./horse.glb", function( gltf ) {
+          meshes[0] = gltf.scene.children[ 0 ];
+          meshes[0].scale.set( 1.5, 1.5, 1.5 );
           meshes[0].rotation.y = 0.5 * Math.PI;
           meshes[0].position.y = 0;
-
 
           for (let i = 1; i < HORSE_NUM; ++i) {
             meshes[i] = meshes[0].clone();
@@ -1720,13 +1694,94 @@ class SFRydeenPass extends THREE.Pass {
             horseGroup.add(meshes[i]);
             //scene.add( meshes[i] );
             mixers[i] = new THREE.AnimationMixer(meshes[i]);
-            let clip = THREE.AnimationClip.CreateFromMorphTargetSequence('gallop', geometry.morphTargets, fps);
+            //let clip = THREE.AnimationClip.CreateFromMorphTargetSequence('gallop', geometry.morphTargets, fps);
+            let clip = gltf.animations[ 0 ].clone();
             mixers[i].clipAction(clip).setDuration(horseAnimSpeed).play();
           }
           horseGroup.visible = false;
           scene.add(horseGroup);
           resolve();
-        });
+
+    
+          // mixer = new THREE.AnimationMixer( mesh );
+    
+          // mixer.clipAction( gltf.animations[ 0 ] ).setDuration( 1 ).play();
+    
+        } );
+    
+        // loader.load("./horse.glb", (gltf) => {
+        //   //geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+
+        //   // meshes[0] = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( {
+        //   //   vertexColors: THREE.FaceColors,
+        //   //   morphTargets: true
+        //   // } ) );
+        //   //geometry.computeVertexNormals();
+        //   let mat = new THREE.MeshPhongMaterial({
+        //     // vertexColors: THREE.FaceColors,
+        //     // shading: THREE.SmoothShading,
+        //     //transparent:true,
+        //     //map:ffttexture,
+        //     side: THREE.DoubleSide,
+        //     //morphNormals: true,
+        //     // color: 0xffffff,
+        //     morphTargets: true,
+        //     transparent: true,
+        //     opacity: 0.0,
+        //     //blending:THREE.AdditiveBlending,
+        //     color: new THREE.Color(1.0, 0.5, 0.0),
+        //     //morphNormals: true,
+        //     //shading: THREE.SmoothShading
+        //     //morphTargets: true
+        //   });
+        //   horseMaterial = mat;
+        //   //mat.reflectivity = 1.0;
+        //   //mat.specular = new THREE.Color(0.5,0.5,0.5);
+        //   //mat.emissive = new THREE.Color(0.5,0,0);
+        //   //        mat.wireframe = true;
+        //   meshes[0] = new THREE.Mesh(geometry, mat);
+
+
+        //   meshes[0].scale.set(1.5, 1.5, 1.5);
+        //   meshes[0].rotation.y = 0.5 * Math.PI;
+        //   meshes[0].position.y = 0;
+
+
+        //   for (let i = 1; i < HORSE_NUM; ++i) {
+        //     meshes[i] = meshes[0].clone();
+        //     //           meshes[i].material =  new THREE.MeshPhongMaterial( {
+        //     //         // vertexColors: THREE.FaceColors,
+        //     //          // shading: THREE.SmoothShading,
+        //     //          //transparent:true,
+        //     //          //map:ffttexture,
+        //     //         // side:THREE.DoubleSide,
+        //     // //            morphNormals: true,
+        //     //            // color: 0xffffff,
+        //     // 						morphTargets: true,
+        //     //             transparent: true,
+        //     //             opacity:0.5,
+        //     //                         color:new THREE.Color(1.0,0.5,0.0)
+
+        //     // 						//morphNormals: true,
+        //     // 						//shading: THREE.SmoothShading//,
+        //     //             //morphTargets: true
+        //     //         } );;
+        //     meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 10)) * 450;
+        //     meshes[i].position.z = (Math.floor((Math.random() - 0.5) * 10)) * 150;
+        //     meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
+        //   }
+
+        //   for (let i = 0; i < HORSE_NUM; ++i) {
+        //     horseGroup.add(meshes[i]);
+        //     //scene.add( meshes[i] );
+        //     mixers[i] = new THREE.AnimationMixer(meshes[i]);
+        //     let clip = THREE.AnimationClip.CreateFromMorphTargetSequence('gallop', geometry.morphTargets, fps);
+        //     mixers[i].clipAction(clip).setDuration(horseAnimSpeed).play();
+        //   }
+        //   horseGroup.visible = false;
+        //   scene.add(horseGroup);
+        //   resolve();
+        //});
       });
     })();
 
@@ -1844,7 +1899,6 @@ class SFRydeenPass extends THREE.Pass {
   rotateCilynder() {
     let rotateCilynder = new Tween.Tween({ time: 0 });
     let self = this;
-    var ry = 0;
     rotateCilynder
       .to({ time: self.endTime }, 1000 * self.endTime)
       .onUpdate(()=> {
@@ -1942,7 +1996,6 @@ class SFRydeenPass extends THREE.Pass {
     let waveCount = ~~(time * 48000);
     let frameNo = ~~(time * this.fps);
     let wsize = 1024;
-    let pat = (((time * 1000 + 179) / 105) & 3) == 0;
     for (let i = 0; i < wsize; ++i) {
       let r = 0, l = 0;
       if ((waveCount + i) < (this.chR.length)) {
@@ -2038,7 +2091,12 @@ class SFRydeenPass extends THREE.Pass {
 
     } else {
 
-      renderer.render(this.scene, this.camera, writeBuffer, this.clear);
+			renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
+
+      //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
     }
 
@@ -2745,8 +2803,9 @@ class SFGpGpuPass extends THREE.Pass {
         format: THREE.RGBAFormat,
         stencilBuffer: false
       };
-      var size = renderer.getSize();
-      this.renderTarget = new THREE.WebGLRenderTarget( size.width, size.height, parameters );
+      const size = new THREE.Vector2();
+      renderer.getSize(size);
+      this.renderTarget = new THREE.WebGLRenderTarget( size.x, size.y, parameters );
       this.mergeUniforms =  {
         tDiffuse: { value: null },
         tDiffuse1: { value: null },
@@ -2920,8 +2979,14 @@ void main()	{
 
 		} else {
 
-			renderer.render( this.scene, this.camera,this.renderTarget , this.clear );
-      renderer.render(this.mergeScene,this.mergeCamera,writeBuffer);
+			this.clear && renderer.clear();
+			const backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(this.renderTarget);
+      renderer.setRenderTarget(writeBuffer);
+      renderer.setRenderTarget(writeBuffer);
+      renderer.render(backup);      
+			//renderer.render( this.scene, this.camera,this.renderTarget , this.clear );
+      //renderer.render(this.mergeScene,this.mergeCamera,writeBuffer);
 
 		}
 
@@ -3003,8 +3068,12 @@ class GlitchPass extends THREE.Pass {
 			renderer.render( this.scene, this.camera );
 
 		} else {
-
-			renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+			
+			this.clear && renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
+			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
 
 		}
 
@@ -3167,21 +3236,15 @@ window.addEventListener('load', function () {
 
 
   //レンダリング
-  var r = 0.0;
   var step = 48000 / fps;
   var frameDelta = 30 / fps;
   var waveCount = 0;
-  var index = 0;
   time = 0;//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
   var endTime = 60.0 * 4.0 + 30.0;
   var frameSpeed = 1.0 / fps; 
-  var delta = frameSpeed;
-  var previewCount = 0;
   var chR;
   var chL;
-  var timer = 0;
-  var pchain = Promise.resolve(0);
   var writeFilePromises = []; 
 
   // Post Effect
@@ -3495,18 +3558,8 @@ window.addEventListener('load', function () {
   }
 
   function renderToFile(preview) {
-    if (preview) {
-      // プレビュー
-      // previewCount++;
-      // if ((previewCount & 1) == 0) {
-      //   requestAnimationFrame(renderToFile.bind(renderToFile, true));
-      //   return;
-      // }
-    }
-
     time += frameSpeed;
     if (time > endTime) {
-      Promise.all(writeFilePromises);
       window.close();
       return;
     }
@@ -3514,7 +3567,6 @@ window.addEventListener('load', function () {
 
     waveCount += step;
     if(waveCount >= chR.length){
-      Promise.all(writeFilePromises);
       window.close();
     }
 

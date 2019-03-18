@@ -62,8 +62,11 @@ void main()	{
       renderer.render(this.scene, this.camera);
 
     } else {
-
-      renderer.render(this.scene, this.camera, writeBuffer, this.clear);
+			this.clear && renderer.clear();
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			renderer.setRenderTarget(backup);
+      //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
     }
 

@@ -4,7 +4,8 @@
   "description": "ライデン",
   "main": "./dist/electron/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build":"build.cmd"
   },
   "repository": {
     "type": "git",
@@ -23,29 +24,14 @@
   },
   "homepage": "https://github.com/electron/electron-quick-start#readme",
   "devDependencies": {
-    "autoprefixer": "^6.7.7",
-    "browser-sync": "^2.26.3",
-    "electron": "^2.0.16",
-    "electron-rebuild": "^1.8.2",
-    "gulp": "^4.0.0",
-    "gulp-logger": "0.0.2",
-    "gulp-plumber": "^1.2.1",
-    "gulp-postcss": "^6.4.0",
-    "gulp-sourcemaps": "^2.6.4",
-    "gulp-watch": "^5.0.1",
-    "postcss-import": "^8.2.0",
-    "postcss-mixins": "^4.0.0",
-    "postcss-nested": "^1.0.1",
-    "postcss-simple-vars": "^1.2.0",
+    "electron-rebuild": "^1.8.4",
     "rollup": "^0.36.4",
     "rollup-plugin-commonjs": "^5.0.5",
     "rollup-plugin-node-resolve": "^2.1.1",
-    "rollup-watch": "^2.5.0",
-    "uglifyify": "^3.0.1",
-    "vinyl-source-stream": "^1.1.2",
-    "watchify": "^3.11.0"
+    "rollup-watch": "^2.5.0"
   },
   "dependencies": {
+    "electron": "^3.1.6",
     "eventemitter3": "^2.0.3",
     "midifile": "^1.0.4",
     "mixin": "^0.2.0",

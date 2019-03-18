@@ -277,8 +277,9 @@ export default class SFGpGpuPass extends THREE.Pass {
         format: THREE.RGBAFormat,
         stencilBuffer: false
       };
-      var size = renderer.getSize();
-      this.renderTarget = new THREE.WebGLRenderTarget( size.width, size.height, parameters );
+      var size = new THREE.Vector2();
+      renderer.getSize(size);
+      this.renderTarget = new THREE.WebGLRenderTarget( size.x, size.y, parameters );
       this.mergeUniforms =  {
         tDiffuse: { value: null },
         tDiffuse1: { value: null },
