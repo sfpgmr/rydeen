@@ -1850,19 +1850,19 @@ class SFRydeenPass extends THREE.Pass {
 
     // Particles
 
-    {
-      let material = new THREE.SpriteMaterial({
-        map: new THREE.CanvasTexture(this.generateSprite()),
-        blending: THREE.AdditiveBlending,
-        transparent: true
-      });
-      for (var i = 0; i < 1000; i++) {
-        let p = new THREE.Sprite(material);
-        p.visible = false;
-        this.initParticle(p, 207.273 * 1000 - 1500 + i * 10);
-        scene.add(p);
-      }
-    }
+    // {
+    //   let material = new THREE.SpriteMaterial({
+    //     map: new THREE.CanvasTexture(this.generateSprite()),
+    //     blending: THREE.AdditiveBlending,
+    //     transparent: true
+    //   });
+    //   for (var i = 0; i < 1000; i++) {
+    //     let p = new THREE.Sprite(material);
+    //     p.visible = false;
+    //     this.initParticle(p, 207.273 * 1000 - 1500 + i * 10);
+    //     scene.add(p);
+    //   }
+    // }
 
 
   }
@@ -1996,7 +1996,7 @@ class SFRydeenPass extends THREE.Pass {
     let ctx = this.ctx;
 
     this.ctx.clearRect(0, 0, TEXW, TEXH);
-    let waveCount = ~~(time * 48000);
+    let waveCount = ~~(time * this.sampleRate);
     let frameNo = ~~(time * this.fps);
     let wsize = 1024;
     for (let i = 0; i < wsize; ++i) {
@@ -3543,7 +3543,7 @@ window.addEventListener('load', function () {
   
   // 間奏エフェクト
   {
-    let s = 161.119 * 1000 - 1500;
+    let s = 161.119 * 1000 - START_OFFSET;
     for(let i = 0;i < 11;++i){
       let st = s + i * 420 * 4;
       events = events.concat([

@@ -323,19 +323,19 @@ export default class SFRydeenPass extends THREE.Pass {
 
     // Particles
 
-    {
-      let material = new THREE.SpriteMaterial({
-        map: new THREE.CanvasTexture(this.generateSprite()),
-        blending: THREE.AdditiveBlending,
-        transparent: true
-      });
-      for (var i = 0; i < 1000; i++) {
-        let p = new THREE.Sprite(material);
-        p.visible = false;
-        this.initParticle(p, 207.273 * 1000 - 1500 + i * 10);
-        scene.add(p);
-      }
-    }
+    // {
+    //   let material = new THREE.SpriteMaterial({
+    //     map: new THREE.CanvasTexture(this.generateSprite()),
+    //     blending: THREE.AdditiveBlending,
+    //     transparent: true
+    //   });
+    //   for (var i = 0; i < 1000; i++) {
+    //     let p = new THREE.Sprite(material);
+    //     p.visible = false;
+    //     this.initParticle(p, 207.273 * 1000 - 1500 + i * 10);
+    //     scene.add(p);
+    //   }
+    // }
 
 
   }
@@ -470,7 +470,7 @@ export default class SFRydeenPass extends THREE.Pass {
     let ctx = this.ctx;
 
     this.ctx.clearRect(0, 0, TEXW, TEXH);
-    let waveCount = ~~(time * 48000);
+    let waveCount = ~~(time * this.sampleRate);
     let frameNo = ~~(time * this.fps);
     let wsize = 1024;
     let pat = (((time * 1000 + 179) / 105) & 3) == 0;

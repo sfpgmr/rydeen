@@ -407,7 +407,7 @@ window.addEventListener('load', function () {
   
   // 間奏エフェクト
   {
-    let s = 161.119 * 1000 - 1500;
+    let s = 161.119 * 1000 - START_OFFSET;
     for(let i = 0;i < 11;++i){
       let st = s + i * 420 * 4;
       events = events.concat([
