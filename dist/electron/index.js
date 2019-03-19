@@ -1343,9 +1343,10 @@ void main()	{
       renderer.render(this.scene, this.camera);
 
     } else {
-			this.clear && renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+      renderer.render(this.scene, this.camera);
 			renderer.setRenderTarget(backup);
       //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
@@ -1465,9 +1466,10 @@ class SFShaderPass extends THREE.Pass {
 			renderer.render( this.scene, this.camera );
 
 		} else {
-			this.clear && renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+			renderer.render( this.scene, this.camera );
 			renderer.setRenderTarget(backup);
 
 			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
@@ -1516,9 +1518,10 @@ class SFCapturePass extends THREE.Pass {
 		if (this.renderToScreen) {
 			renderer.render(this.scene, this.camera);
 		} else {
-			this.clear && renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+			renderer.render(this.scene, this.camera);
 			renderer.setRenderTarget(backup);			
 			//renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 		}
@@ -2091,9 +2094,10 @@ class SFRydeenPass extends THREE.Pass {
 
     } else {
 
-			renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			renderer.clear();
+      renderer.render(this.scene, this.camera);
 			renderer.setRenderTarget(backup);
 
       //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
@@ -2499,7 +2503,10 @@ class GPUComputationRenderer{
 	doRenderTarget( material, output ) {
 
 		this.mesh.material = material;
-		this.renderer.render( this.scene, this.camera, output );
+		const backup = this.renderer.getRenderTarget();
+		this.renderer.setRenderTarget(output);
+		this.renderer.render( this.scene, this.camera);
+		this.renderer.setRenderTarget(backup);
 		this.mesh.material = this.passThruShader;
 
 	};
@@ -2803,7 +2810,7 @@ class SFGpGpuPass extends THREE.Pass {
         format: THREE.RGBAFormat,
         stencilBuffer: false
       };
-      const size = new THREE.Vector2();
+      var size = new THREE.Vector2();
       renderer.getSize(size);
       this.renderTarget = new THREE.WebGLRenderTarget( size.x, size.y, parameters );
       this.mergeUniforms =  {
@@ -2974,19 +2981,21 @@ void main()	{
 
 		if ( this.renderToScreen ) {
 
-			renderer.render( this.scene, this.camera,this.renderTarget );
+      const backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(this.renderTarget);
+      renderer.render( this.scene, this.camera );
+			renderer.setRenderTarget(backup);
       renderer.render(this.mergeScene,this.mergeCamera);
 
 		} else {
 
-			this.clear && renderer.clear();
-			const backup = renderer.getRenderTarget();
+      const backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(this.renderTarget);
-      renderer.setRenderTarget(writeBuffer);
-      renderer.setRenderTarget(writeBuffer);
-      renderer.render(backup);      
-			//renderer.render( this.scene, this.camera,this.renderTarget , this.clear );
-      //renderer.render(this.mergeScene,this.mergeCamera,writeBuffer);
+      this.clear && renderer.clear();
+			renderer.render( this.scene, this.camera);
+			renderer.setRenderTarget(writeBuffer);
+      renderer.render(this.mergeScene,this.mergeCamera,writeBuffer);
+			renderer.setRenderTarget(backup);
 
 		}
 
@@ -3069,12 +3078,11 @@ class GlitchPass extends THREE.Pass {
 
 		} else {
 			
-			this.clear && renderer.clear();
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+			renderer.render( this.scene, this.camera);
 			renderer.setRenderTarget(backup);
-			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
-
 		}
 
 	}

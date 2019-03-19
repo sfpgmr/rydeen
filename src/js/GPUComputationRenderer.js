@@ -343,7 +343,10 @@ export default class GPUComputationRenderer{
 	doRenderTarget( material, output ) {
 
 		this.mesh.material = material;
-		this.renderer.render( this.scene, this.camera, output );
+		const backup = this.renderer.getRenderTarget();
+		this.renderer.setRenderTarget(output);
+		this.renderer.render( this.scene, this.camera);
+		this.renderer.setRenderTarget(backup);
 		this.mesh.material = this.passThruShader;
 
 	};
