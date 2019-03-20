@@ -27,22 +27,22 @@
 
 import * as fs from 'fs';
 //import var sf = require('./pathSerializer');
-import denodeify from '../denodeify'; 
+import denodeify from '../denodeify.mjs'; 
 import TWEEN from 'tween.js';
 const readFile = denodeify(fs.readFile);
 const writeFile = denodeify(fs.writeFile); 
-import TimeLine  from '../TimeLine';
+import TimeLine  from '../TimeLine.mjs';
 import { nativeImage } from 'electron';
 import sharp  from 'sharp';
-import QueryString  from '../QueryString';
-import SF8Pass from '../SF8Pass';
-import SFShaderPass from '../SFShaderPass';
-import SFCapturePass from '../SFCapturePass';
-import SFRydeen from '../SFRydeen';
-import SFGpGpuPass from '../SFGpGpuPass';
-import GlitchPass from '../GlitchPass';
+import QueryString  from '../QueryString.mjs';
+import SF8Pass from '../SF8Pass.mjs';
+import SFShaderPass from '../SFShaderPass.mjs';
+import SFCapturePass from '../SFCapturePass.mjs';
+import SFRydeen from '../SFRydeen.mjs';
+import SFGpGpuPass from '../SFGpGpuPass.mjs';
+import GlitchPass from '../GlitchPass.mjs';
 //import DSP from '../dsp';
-import AudioAnalyser from '../AudioAnalyser';
+import AudioAnalyser from '../AudioAnalyser.mjs';
 
 const SAMPLE_RATE = 96000;
 
@@ -83,7 +83,7 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
 var time;
 
 // メイン
-window.addEventListener('load', function () {
+window.addEventListener('load', async function(){
   var qstr = new QueryString();
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == 'true';
@@ -136,10 +136,10 @@ window.addEventListener('load', function () {
   gpuPass.enabled = false;
   composer.addPass(gpuPass);
 
-  let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
-  sfShaderPass.enabled = true;
-  sfShaderPass.renderToScreen = false;
-  composer.addPass(sfShaderPass);
+  // let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
+  // sfShaderPass.enabled = true;
+  // sfShaderPass.renderToScreen = false;
+  // composer.addPass(sfShaderPass);
 
   
   let glitchPass = new GlitchPass();
@@ -430,7 +430,7 @@ window.addEventListener('load', function () {
     timeline.skip(time);
   }
 
-  function renderToFile(preview) {
+  async function renderToFile(preview) {
     if (preview) {
       // プレビュー
       // previewCount++;
@@ -458,9 +458,9 @@ window.addEventListener('load', function () {
     gpuPass.update(time);
     composer.render();
 
-    if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
-      sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
-    }
+    // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
+    //   sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
+    // }
     let timeMs = time * 1000;
     timeline.update(timeMs);
     TWEEN.update(timeMs);
@@ -480,23 +480,12 @@ window.addEventListener('load', function () {
       // var img  = nativeImage.createFromDataURL(data);
       // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
       writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',WIDTH,HEIGHT));
-      let p = Promise.resolve(0);
-      if(writeFilePromises.length > 50)
-      {
-        p = Promise.all(writeFilePromises)
-        .then(()=>{
-          writeFilePromises.length = 0;
-        });
-      }
-      // saveImage(new Buffer(sfCapturePass.buffer.buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png',WIDTH,HEIGHT)
-      p.then(renderToFile.bind(this,preview))
-      .catch(function(e){
-        console.log(e);
-      });
+      await Promise.all(writeFilePromises);
+      writeFilePromises.length = 0;
+      await renderToFile(preview);
     } else {
       // プレビュー
       requestAnimationFrame(renderToFile.bind(null, preview));
-      //renderer.render(scene, camera);
     }
   }
 
@@ -515,17 +504,13 @@ window.addEventListener('load', function () {
   //  }
   //  renderer.render(scene, camera);
   //};
-  Promise.all([animMain.init,gpuPass.init])
-  .then(audioAnalyser.load.bind(audioAnalyser))
-  .then(()=>{
-    chL = audioAnalyser.source.buffer.getChannelData(0);
-    chR = audioAnalyser.source.buffer.getChannelData(1);
-    animMain.chL = chL;
-    animMain.chR = chR;
-    renderToFile(preview);
-  }).catch(function (e) {
-    console.log(e);
-  });
+  await Promise.all([animMain.init,gpuPass.init]);
+  await audioAnalyser.load();
+  chL = audioAnalyser.source.buffer.getChannelData(0);
+  chR = audioAnalyser.source.buffer.getChannelData(1);
+  animMain.chL = chL;
+  animMain.chR = chR;
+  await renderToFile(preview);
 
 });
 

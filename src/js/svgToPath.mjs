@@ -20,14 +20,9 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js" />
-/// <reference path="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js" />
-/// <reference path="..\intellisense\q.intellisense.js" />
-/// <reference path="pathSerializer.js" />
-
 //(function(){
 //})();
-var denodeify = require('./denodeify');
+var denodeify = require('./denodeify.mjs');
 
 (function (grobal){
   var fs = require('fs');

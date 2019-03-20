@@ -21,7 +21,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-import denodeify from './denodeify';
+import denodeify from './denodeify.mjs';
 import *  as fs  from 'fs';
 
 var readFile = denodeify(fs.readFile);

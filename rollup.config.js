@@ -4,7 +4,7 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 
 export default [{
-  input: 'src/js/electron/index.js',
+  input: 'src/js/electron/index.mjs',
   output: {
     file: 'dist/electron/index.js',
     format: 'cjs'
@@ -18,7 +18,7 @@ export default [{
   ]  
 },
 {
-  input: 'src/js/electron/main.js',
+  input: 'src/js/electron/main.mjs',
   output: {
     file: 'dist/electron/main.js',
     format: 'cjs'

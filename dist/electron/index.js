@@ -27,10 +27,6 @@ function denodeify (nodeFunc){
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-
-
-
-
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
@@ -893,29 +889,18 @@ TWEEN.Interpolation = {
 // UMD (Universal Module Definition)
 (function (root) {
 
-	if (typeof define === 'function' && define.amd) {
-
-		// AMD
-		define([], function () {
-			return TWEEN;
-		});
-
-	} else if (typeof module !== 'undefined' && typeof exports === 'object') {
+	{
 
 		// Node.js
 		module.exports = TWEEN;
-
-	} else if (root !== undefined) {
-
-		// Global variable
-		root.TWEEN = TWEEN;
 
 	}
 
 })(commonjsGlobal);
 });
 
-var index = createCommonjsModule(function (module) {
+var eventemitter3 = createCommonjsModule(function (module) {
+
 var has = Object.prototype.hasOwnProperty
   , prefix = '~';
 
@@ -1222,12 +1207,12 @@ EventEmitter.EventEmitter = EventEmitter;
 //
 // Expose the module.
 //
-if ('undefined' !== typeof module) {
+{
   module.exports = EventEmitter;
 }
 });
 
-class TimeLine extends index
+class TimeLine extends eventemitter3
 {
   constructor(events = []){
     super();
@@ -1283,8 +1268,6 @@ class QueryString {
 /**
  * @author SFPGMR
  */
-// Shader Sampleより拝借
-// https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
 class SF8Pass extends THREE.Pass {
   constructor() {
     super();
@@ -1358,9 +1341,8 @@ void main()	{
 /**
  * @author SFPGMR
  */
- // Shader Sampleより拝借
- // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
-let vertexShader = 
+
+  let vertexShader = 
 `
 varying vec2 vUv;
 void main()	{
@@ -1531,8 +1513,7 @@ class SFCapturePass extends THREE.Pass {
 /**
  * @author SFPGMR
  */
-// Shader Sampleより拝借
-// https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
+
 class SFRydeenPass extends THREE.Pass {
   constructor(width, height, fps, endTime, sampleRate = 48000) {
     super();
@@ -2537,8 +2518,7 @@ class GPUComputationRenderer{
 /**
  * @author SFPGMR
  */
- // Shader Sampleより拝借
- // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
+
 const fragmentShaderPosition = `
 uniform float time;
 uniform float delta;
@@ -2790,8 +2770,7 @@ class SFGpGpuPass extends THREE.Pass {
 			this.windowHalfY = height / 2;
 			this.BOUNDS = 800, this.BOUNDS_HALF = this.BOUNDS / 2;
 	
-			this.gpuCompute = null;
-			this.velocityVariable = null;
+			this.gpuCompute = null;			this.velocityVariable = null;
 			this.positionVariable = null;
 			this.positionUniforms = null;
 			this.velocityUniforms = null;
@@ -3115,29 +3094,8 @@ class GlitchPass extends THREE.Pass {
 }
 
 //
-//The MIT License (MIT)
-//
-//Copyright (c) 2015 Satoshi Fujiwara
-//
-//Permission is hereby granted, free of charge, to any person obtaining a copy
-//of this software and associated documentation files (the "Software"), to deal
-//in the Software without restriction, including without limitation the rights
-//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//copies of the Software, and to permit persons to whom the Software is
-//furnished to do so, subject to the following conditions:
-//
-//The above copyright notice and this permission notice shall be included in
-//all copies or substantial portions of the Software.
-//
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
 
-var readFile$2 = denodeify(fs.readFile);
+var readFile = denodeify(fs.readFile);
 
 class Audio {
   load() {
@@ -3152,7 +3110,7 @@ class Audio {
       return ab;
     }
     let self = this;
-   return  readFile$2('./media/Rydeen3.wav')
+   return  readFile('./media/Rydeen3.wav')
     .then(function(data){
       return new Promise((resolve,reject)=>{
         var arrayBuf = toArrayBuffer(data);
@@ -3178,34 +3136,9 @@ class Audio {
 }
 
 //The MIT License (MIT)
-//
-//Copyright (c) 2015 Satoshi Fujiwara
-//
-//Permission is hereby granted, free of charge, to any person obtaining a copy
-//of this software and associated documentation files (the "Software"), to deal
-//in the Software without restriction, including without limitation the rights
-//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//copies of the Software, and to permit persons to whom the Software is
-//furnished to do so, subject to the following conditions:
-//
-//The above copyright notice and this permission notice shall be included in
-//all copies or substantial portions of the Software.
-//
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
-
-// リリース時にはコメントアウトすること
-//document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
-//':35729/livereload.js?snipver=2"></' + 'script>');
-//import var sf = require('./pathSerializer');
 const readFile$1 = denodeify(fs.readFile);
-const writeFile$1 = denodeify(fs.writeFile); 
-//import DSP from '../dsp';
+const writeFile = denodeify(fs.writeFile); 
+
 const SAMPLE_RATE = 96000;
 
 function saveImage(buffer,path,width,height)
@@ -3225,7 +3158,7 @@ function saveImage(buffer,path,width,height)
 var time;
 
 // メイン
-window.addEventListener('load', function () {
+window.addEventListener('load', async function(){
   var qstr = new QueryString();
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == 'true';
@@ -3241,11 +3174,7 @@ window.addEventListener('load', function () {
 
   d3.select('#content').node().appendChild(renderer.domElement);
   renderer.clear();
-
-
-  //レンダリング
   const step = SAMPLE_RATE / fps;
-  var frameDelta = 30 / fps;
   var waveCount = 0;
   time = 0;//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
@@ -3272,10 +3201,10 @@ window.addEventListener('load', function () {
   gpuPass.enabled = false;
   composer.addPass(gpuPass);
 
-  let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
-  sfShaderPass.enabled = true;
-  sfShaderPass.renderToScreen = false;
-  composer.addPass(sfShaderPass);
+  // let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
+  // sfShaderPass.enabled = true;
+  // sfShaderPass.renderToScreen = false;
+  // composer.addPass(sfShaderPass);
 
   
   let glitchPass = new GlitchPass();
@@ -3566,7 +3495,8 @@ window.addEventListener('load', function () {
     timeline.skip(time);
   }
 
-  function renderToFile(preview) {
+  async function renderToFile(preview) {
+
     time += frameSpeed;
     if (time > endTime) {
       window.close();
@@ -3583,9 +3513,9 @@ window.addEventListener('load', function () {
     gpuPass.update(time);
     composer.render();
 
-    if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
-      sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
-    }
+    // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
+    //   sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
+    // }
     let timeMs = time * 1000;
     timeline.update(timeMs);
     Tween.update(timeMs);
@@ -3605,23 +3535,12 @@ window.addEventListener('load', function () {
       // var img  = nativeImage.createFromDataURL(data);
       // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
       writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',WIDTH,HEIGHT));
-      let p = Promise.resolve(0);
-      if(writeFilePromises.length > 50)
-      {
-        p = Promise.all(writeFilePromises)
-        .then(()=>{
-          writeFilePromises.length = 0;
-        });
-      }
-      // saveImage(new Buffer(sfCapturePass.buffer.buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.png',WIDTH,HEIGHT)
-      p.then(renderToFile.bind(this,preview))
-      .catch(function(e){
-        console.log(e);
-      });
+      await Promise.all(writeFilePromises);
+      writeFilePromises.length = 0;
+      await renderToFile(preview);
     } else {
       // プレビュー
       requestAnimationFrame(renderToFile.bind(null, preview));
-      //renderer.render(scene, camera);
     }
   }
 
@@ -3640,16 +3559,12 @@ window.addEventListener('load', function () {
   //  }
   //  renderer.render(scene, camera);
   //};
-  Promise.all([animMain.init,gpuPass.init])
-  .then(audioAnalyser.load.bind(audioAnalyser))
-  .then(()=>{
-    chL = audioAnalyser.source.buffer.getChannelData(0);
-    chR = audioAnalyser.source.buffer.getChannelData(1);
-    animMain.chL = chL;
-    animMain.chR = chR;
-    renderToFile(preview);
-  }).catch(function (e) {
-    console.log(e);
-  });
+  await Promise.all([animMain.init,gpuPass.init]);
+  await audioAnalyser.load();
+  chL = audioAnalyser.source.buffer.getChannelData(0);
+  chR = audioAnalyser.source.buffer.getChannelData(1);
+  animMain.chL = chL;
+  animMain.chR = chR;
+  await renderToFile(preview);
 
 });

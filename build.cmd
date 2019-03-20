@@ -1,2 +1,2 @@
 call rollup -c .\rollup.config.js
-electron .
+electron . -framerate 60

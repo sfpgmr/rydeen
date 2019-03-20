@@ -144,23 +144,23 @@ export default class SFRydeenPass extends THREE.Pass {
 
           for (let i = 1; i < HORSE_NUM; ++i) {
             meshes[i] = meshes[0].clone();
-            //           meshes[i].material =  new THREE.MeshPhongMaterial( {
-            //         // vertexColors: THREE.FaceColors,
-            //          // shading: THREE.SmoothShading,
-            //          //transparent:true,
-            //          //map:ffttexture,
-            //         // side:THREE.DoubleSide,
-            // //            morphNormals: true,
-            //            // color: 0xffffff,
-            // 						morphTargets: true,
-            //             transparent: true,
-            //             opacity:0.5,
-            //                         color:new THREE.Color(1.0,0.5,0.0)
+            meshes[i].material =  new THREE.MeshPhongMaterial( {
+          // vertexColors: THREE.FaceColors,
+            // shading: THREE.SmoothShading,
+            //transparent:true,
+            //map:ffttexture,
+          // side:THREE.DoubleSide,
+  //            morphNormals: true,
+              // color: 0xffffff,
+              morphTargets: true,
+              transparent: true,
+              opacity:0.5,
+              color:new THREE.Color(1.0,0.5,0.0)
 
-            // 						//morphNormals: true,
-            // 						//shading: THREE.SmoothShading//,
-            //             //morphTargets: true
-            //         } );;
+              //morphNormals: true,
+              //shading: THREE.SmoothShading//,
+              //morphTargets: true
+            } );;
             meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 10)) * 450;
             meshes[i].position.z = (Math.floor((Math.random() - 0.5) * 10)) * 150;
             meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
