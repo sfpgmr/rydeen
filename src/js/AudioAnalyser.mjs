@@ -39,7 +39,7 @@ export default class Audio {
       return ab;
     }
     let self = this;
-   return  readFile('./media/Rydeen3.wav')
+   return  readFile('./media/Rydeen.wav')
     .then(function(data){
       return new Promise((resolve,reject)=>{
         var arrayBuf = toArrayBuffer(data);

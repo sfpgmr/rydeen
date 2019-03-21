@@ -37,6 +37,7 @@ import sharp  from 'sharp';
 import QueryString  from '../QueryString.mjs';
 import SF8Pass from '../SF8Pass.mjs';
 import SFShaderPass from '../SFShaderPass.mjs';
+import HorseAnim from '../HorseAnim.mjs';
 import SFCapturePass from '../SFCapturePass.mjs';
 import SFRydeen from '../SFRydeen.mjs';
 import SFGpGpuPass from '../SFGpGpuPass.mjs';
@@ -123,25 +124,31 @@ window.addEventListener('load', async function(){
 
   let composer = new THREE.EffectComposer(renderer);
 
-  //let renderPass = new THREE.RenderPass(scene, camera);
-  var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-//  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-  animMain.renderToScreen = false;
-  animMain.enabled = true;
-  composer.setSize(WIDTH, HEIGHT);
-  composer.addPass(animMain);
 
-  let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-  gpuPass.renderToScreen = false;
-  gpuPass.enabled = false;
-  composer.addPass(gpuPass);
+  //let renderPass = new THREE.RenderPass(scene, camera);
+//   var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+// //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+//   animMain.renderToScreen = false;
+//   animMain.enabled = true;
+//   composer.setSize(WIDTH, HEIGHT);
+//   composer.addPass(animMain);
+
+  let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  horseAnim.enabled = true;
+  horseAnim.renderToScreen = false;
+  composer.addPass(horseAnim);
+
+
+  // let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+  // gpuPass.renderToScreen = false;
+  // gpuPass.enabled = false;
+  // composer.addPass(gpuPass);
 
   // let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
   // sfShaderPass.enabled = true;
   // sfShaderPass.renderToScreen = false;
   // composer.addPass(sfShaderPass);
-
-  
+    
   let glitchPass = new GlitchPass();
   glitchPass.renderToScreen = false;
   glitchPass.enabled = true;
@@ -224,24 +231,24 @@ window.addEventListener('load', async function(){
   // テクスチャのアップデート
   const START_OFFSET = 1678;
   var events = [
-    // 馬のフェードイン・フェードアウト
-    {time:60420 - START_OFFSET,func:animMain.horseFadein()},
-    {time:60240 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
-    {time:134266 - START_OFFSET,func:animMain.horseFadein()},
-    {time:134266 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
-    // シリンダーの回転
-    {time:0,func:start(animMain.rotateCilynder.bind(animMain))},
-    // カメラワーク
-    {time:20.140 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
-    {time:32.727 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
-    {time:46.993 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
-    {time:60.420 * 1000 - START_OFFSET,func:start(animMain.cameraTween4.bind(animMain))},
-    {time:79.720 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
-    {time:93.986 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
-    {time:106.573 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
-    {time:120.839 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
-    {time:133.427 * 1000 - START_OFFSET,func:start(animMain.cameraTween4.bind(animMain))},
-    {time:180.420 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
+    // // 馬のフェードイン・フェードアウト
+    // {time:60420 - START_OFFSET,func:animMain.horseFadein()},
+    // {time:60240 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
+    // {time:134266 - START_OFFSET,func:animMain.horseFadein()},
+    // {time:134266 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
+    // // シリンダーの回転
+    // {time:0,func:start(animMain.rotateCilynder.bind(animMain))},
+    // // カメラワーク
+    // {time:20.140 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
+    // {time:32.727 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
+    // {time:46.993 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
+    // {time:60.420 * 1000 - START_OFFSET,func:start(animMain.cameraTween4.bind(animMain))},
+    // {time:79.720 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
+    // {time:93.986 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
+    // {time:106.573 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
+    // {time:120.839 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
+    // {time:133.427 * 1000 - START_OFFSET,func:start(animMain.cameraTween4.bind(animMain))},
+    // {time:180.420 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
     // drums fill
     {time:5.874 * 1000 - START_OFFSET,func:start(fillEffect)},
     {time:6.294 * 1000 - START_OFFSET,func:start(fillEffect)},
@@ -400,7 +407,7 @@ window.addEventListener('load', async function(){
     {time:234.234 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
 
     // 間奏エフェクト
-    {time:154.406 * 1000 - START_OFFSET,func:start(intEffect)}
+    {time:154.406 * 1000 - START_OFFSET,func:start(intEffect)},
     //{time:0,func:start(intEffect)}
 
   ];
@@ -454,8 +461,8 @@ window.addEventListener('load', async function(){
       window.close();
     }
 
-    animMain.update(time);
-    gpuPass.update(time);
+    //animMain.update(time);
+    //gpuPass.update(time);
     composer.render();
 
     // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
@@ -504,12 +511,12 @@ window.addEventListener('load', async function(){
   //  }
   //  renderer.render(scene, camera);
   //};
-  await Promise.all([animMain.init,gpuPass.init]);
+  //await Promise.all([animMain.init,gpuPass.init]);
   await audioAnalyser.load();
   chL = audioAnalyser.source.buffer.getChannelData(0);
   chR = audioAnalyser.source.buffer.getChannelData(1);
-  animMain.chL = chL;
-  animMain.chR = chR;
+  //animMain.chL = chL;
+  //animMain.chR = chR;
   await renderToFile(preview);
 
 });
