@@ -12,6 +12,7 @@ if not exist %target% (
 
 call rollup -c .\rollup.config.b.js
 
+copy /y src\html\browser\index.html %src%
 xcopy /s /q /y %src% %target%
 
 livereloadx -s %target%

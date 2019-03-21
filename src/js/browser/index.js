@@ -31,11 +31,14 @@ import TimeLine  from '../TimeLine';
 //import sharp  from 'sharp';
 import QueryString  from '../QueryString';
 import SF8Pass from '../SF8Pass';
-import SFShaderPass from '../SFShaderPass';
+//import SFShaderPass from '../SFShaderPass';
+import HorseAnim from '../HorseAnim.mjs';
+
 //import SFCapturePass from '../SFCapturePass';
 //import SFRydeen from '../SFRydeen';
 import SFGpGpuPass from '../SFGpGpuPass';
 import GlitchPass from '../GlitchPass';
+impoer
 
 const SAMPLE_RATE = 48000;
 
@@ -110,15 +113,20 @@ window.addEventListener('load', function () {
 //  animMain.enabled = true;
 //  composer.addPass(animMain);
 
-  let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-  gpuPass.renderToScreen = false;
-  gpuPass.enabled = true;
-  composer.addPass(gpuPass);
+  // let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+  // gpuPass.renderToScreen = false;
+  // gpuPass.enabled = true;
+  // composer.addPass(gpuPass);
 
-  let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
-  sfShaderPass.enabled = true;
-  sfShaderPass.renderToScreen = true;
-  composer.addPass(sfShaderPass);
+  // let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
+  // sfShaderPass.enabled = true;
+  // sfShaderPass.renderToScreen = true;
+  // composer.addPass(sfShaderPass);
+
+  let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  horseAnim.enabled = true;
+  horseAnim.renderToScreen = true;
+  composer.addPass(horseAnim);
 
   
 //   let glitchPass = new GlitchPass();
@@ -446,7 +454,7 @@ window.addEventListener('load', function () {
 
     //animMain.update(time);
     //renderer.clear();
-    gpuPass.update(time);
+    //gpuPass.update(time);
     composer.render();
 
     if(sfShaderPass.enabled && ((frameNo & 3) == 0)){

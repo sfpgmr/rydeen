@@ -1318,123 +1318,165 @@ void main()	{
      * @author SFPGMR
      */
 
-      let vertexShader = 
-`
-varying vec2 vUv;
-void main()	{
-		vUv = uv;
-    gl_Position = vec4( position, 1.0 );
-  }
-`    ;
-      let fragmentShader = 
-`
-uniform sampler2D tDiffuse;
-uniform vec2 resolution;
-uniform float time;
-varying vec2 vUv;
-void main()	{
+    const NUM_X = 16, NUM_Y = 12;
+    const NUM_OBJS = NUM_X * NUM_Y;
 
-  vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
-  vec4 c1,c2;
-  float a = time*40.0;
-  float d,e,f,g=1.0/40.0,h,i,r,q;
-  float c2v;
-  e=400.0*(p.x*0.5+0.5);
-  f=400.0*(p.y*0.5+0.5);
-  i=200.0+sin(e*g+a/150.0)*20.0;
-  d=200.0+cos(f*g/2.0)*18.0+cos(e*g)*7.0;
-  r=sqrt(pow(abs(i-e),2.0)+pow(abs(d-f),2.0));
-  q=f/r;
-  e=(r*cos(q))-a/2.0;f=(r*sin(q))-a/2.0;
-  d=sin(e*g)*176.0+sin(e*g)*164.0+r;
-  h=((f+d)+a/2.0)*g;
-  i=cos(h+r*p.x/1.3)*(e+e+a)+cos(q*g*6.0)*(r+h/3.0);
-  h=sin(f*g)*144.0-sin(e*g)*212.0*p.x;
-  h=(h+(f-e)*q+sin(r-(a+h)/7.0)*10.0+i/4.0)*g;
-  i+=cos(h*2.3*sin(a/350.0-q))*184.0*sin(q-(r*4.3+a/12.0)*g)+tan(r*g+h)*184.0*cos(r*g+h);
-  i=mod(i/5.6,256.0)/64.0;
-  if(i<0.0) i+=4.0;
-  if(i>=2.0) i=4.0-i;
-  d=r/350.0;
-  d+=sin(d*d*8.0)*0.52;
-  f=(sin(a*g)+1.0)/2.0;
-  c2 = texture2D( tDiffuse, vUv );
-  c1 = vec4(vec3(f*i/1.6,i/2.0+d/13.0,i)*d*p.x+vec3(i/1.3+d/8.0,i/2.0+d/18.0,i)*d*(1.0-p.x),1.0);
-  float alpha = c2.w;
-  c2.w = 1.0;
-  if(length(vec3(c2.x,c2.y,c2.z)) > 0.0 ) 
-  {
-    gl_FragColor = c2;
-  } else {
-    gl_FragColor = vec4(vec3(c1.x,c1.y,c1.z)* 0.17,1.0);
-  }
-}
-`    ;
+    class HorseAnim extends THREE.Pass {
+      constructor(width, height) {
+        super();
 
-    //     let geometry = new THREE.PlaneBufferGeometry( 1920, 1080 );
-    let uniforms = {
-          tDiffuse: { value: null },
-          resolution: { value: new THREE.Vector2() },
-    			time:       { value: 0.0 }
-        };
-    //     uniforms.resolution.value.x = WIDTH;
-    //     uniforms.resolution.value.y = HEIGHT;
-    //     let material = new THREE.ShaderMaterial( {
-    //       uniforms: uniforms,
-    //       vertexShader: vertShader,
-    //       fragmentShader: fragShader
-    //     } );
-    //     let mesh = new THREE.Mesh( geometry, material );
-    //     mesh.position.z = -5000;
-    //     scene.add( mesh );
-    //   }
 
-    class SFShaderPass extends THREE.Pass {
-    	constructor(width,height){
-    		super();
+        // シーンの作成
+        const scene = this.scene = new THREE.Scene();
 
-    		this.uniforms = THREE.UniformsUtils.clone( uniforms );
-    		this.uniforms.resolution.value.x = width;
-    		this.uniforms.resolution.value.y = height;
-    		this.material = new THREE.ShaderMaterial( {
-    			uniforms: this.uniforms,
-    			vertexShader: vertexShader,
-    			fragmentShader: fragmentShader
-    		} );
+        // カメラの作成
+        const camera = this.camera = new THREE.PerspectiveCamera(90.0, width / height);
+        camera.position.x = 0.0;
+        camera.position.y = 0.0;
+        camera.position.z = 250.0;//(WIDTH / 2.0) * HEIGHT / WIDTH;
+        camera.lookAt(new THREE.Vector3(0.0, 0.0, 0.0));
+        this.width = width;
+        this.height = height;
 
-    		this.camera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 0, 1 );
-    		this.scene  = new THREE.Scene();
+        // SVGファイルから馬のメッシュを作る
+        const svgText = d3.text('./horse07-1.svg').then(svgText=>{
+          const svgLoader = new THREE.SVGLoader();
+          const paths = svgLoader.parse(svgText);
+          //console.log(paths);
+          const groups = this.groups = [];
+      
+          for (let y = 0; y < NUM_Y; ++y) {
+            for (let x = 0; x < NUM_X; ++x) {
+              const g = new THREE.Group();
+              g.position.set((x - NUM_X / 2) * 80, (NUM_Y / 2 - y) * 50, 1.0);
+              groups.push(g);
+              scene.add(g);
+            }
+          }
+      
+          for (var i = 0; i < paths.length; i++) {
+            const path = paths[i];
+      
+            const shapes = path.toShapes(true, false);
+      
+      
+      
+            for (let j = 0; j < shapes.length; ++j) {
+              const shape = shapes[j];
+              const geometry = new THREE.ShapeBufferGeometry(shape);
+              const positions = geometry.attributes.position.array;
+      
+              let sx = path.currentPath.currentPoint.x;
+              let sy = path.currentPath.currentPoint.y;
+              let ex = path.currentPath.currentPoint.x;
+              let ey = path.currentPath.currentPoint.y;
+      
+              for (let i = 0, e = positions.length; i < e; i += 3) {
+                sx = Math.min(sx, positions[i + 0/* x */]);
+                sy = Math.min(sy, positions[i + 1/* y */]);
+                ex = Math.max(ex, positions[i + 0/* x */]);
+                ey = Math.max(ey, positions[i + 1/* y */]);
+              }
+      
+              let cx = ex - (ex - sx) / 2;
+              let cy = ey - (ey - sy) / 2;
+      
+              for (let i = 0, e = positions.length; i < e; i += 3) {
+                positions[i + 0/* x */] -= cx;
+                positions[i + 1] = (positions[i + 1] - cy) * -1;
+                positions[i + 2] = 10.0;
+              }
+      
+      
+              for (let k = 0; k < NUM_OBJS; ++k) {
+                const material = new THREE.MeshBasicMaterial({
+                  color: new THREE.Color(0.5, 0.0, 0.0),
+                  side: THREE.DoubleSide,
+                  depthWrite: true
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.scale.set(0.25, 0.25, 0.25);
+                mesh.visible = false;
+                groups[k].add(mesh);
+              }
+            }
+          }
+        });
+        	//レンダリング
+          this.ca = 360| 0;
+          this.cb = 143 | 0;
+          this.c = 0;
+          this.index = 0;
 
-    		this.quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), null );
-    		this.scene.add( this.quad );
 
-    	}
-
-      setSize(width,height){
-    		this.uniforms.resolution.value.x = width;
-    		this.uniforms.resolution.value.y = height;
       }
 
-    	render(renderer, writeBuffer, readBuffer, delta, maskActive){
-    		this.uniforms[ "tDiffuse" ].value = readBuffer.texture;
-    		this.quad.material = this.material;
+      setSize(width, height) {
+        this.width = width;
+        this.height = height;
 
-    		if ( this.renderToScreen ) {
+        this.camera.aspect = this.width / this.height;
+        this.camera.updateProjectionMatrix();
 
-    			renderer.render( this.scene, this.camera );
+      }
 
-    		} else {
-    			let backup = renderer.getRenderTarget();
-    			renderer.setRenderTarget(writeBuffer);
-    			this.clear && renderer.clear();
-    			renderer.render( this.scene, this.camera );
-    			renderer.setRenderTarget(backup);
+      render(renderer, writeBuffer, readBuffer, delta, maskActive) {
 
-    			//renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+        this.c += 0.1;
+    		const idx = this.index | 0;
+    			for(let y = 0;y < NUM_Y;++y){
+    				for(let x = 0;x < NUM_X;++x){
+    	
+    				let dist = Math.abs(Math.sqrt(Math.pow((x - NUM_X / 2) * NUM_X/NUM_Y,2) + Math.pow((y - NUM_Y / 2) ,2)));
+    				let color_r = (Math.sin(dist + this.c) + 1.0) / 2.0; 
+    				let color_g = (Math.sin(dist + this.c + Math.PI / 2.0) + 1.0) / 2.0; 
+    				let color_b = (Math.sin(dist + this.c + Math.PI ) + 1.0) /2;
+    				const g = this.groups[x + y * NUM_X];
+    				const m = g.children;
+    				let curX = g.position.x + 4;
+    				if(curX > 640){
+    					curX = -640;
+    				}
+     				g.position.set(curX,g.position.y,g.position.z);
 
+    		
+    				for(let k = 0;k < 10;++k){
+    					if (idx == k) {
+    						m[k].visible = true;
+    						m[k].material.color = new THREE.Color(color_r,color_g,color_b);
+    					} else {
+    						m[k].visible = false;
+    					}
+    				}
+    			}
     		}
 
-    	}
+    		//0.041958041958042
+    		this.ca -= this.cb;
+    		if(this.ca <= 0){
+    			++this.index;
+    			this.ca += 360 | 0;
+    		}
+
+    		if (this.index > 9) this.index = 0;    
+
+
+        if (this.renderToScreen) {
+
+          renderer.render(this.scene, this.camera);
+
+        } else {
+          let backup = renderer.getRenderTarget();
+          renderer.setRenderTarget(writeBuffer);
+          this.clear && renderer.clear();
+          renderer.render(this.scene, this.camera);
+          renderer.setRenderTarget(backup);
+
+          //renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+
+        }
+
+      }
     }
 
     /**
@@ -2428,15 +2470,20 @@ void main()	{
     //  animMain.enabled = true;
     //  composer.addPass(animMain);
 
-      let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-      gpuPass.renderToScreen = false;
-      gpuPass.enabled = true;
-      composer.addPass(gpuPass);
+      // let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+      // gpuPass.renderToScreen = false;
+      // gpuPass.enabled = true;
+      // composer.addPass(gpuPass);
 
-      let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
-      sfShaderPass.enabled = true;
-      sfShaderPass.renderToScreen = true;
-      composer.addPass(sfShaderPass);
+      // let sfShaderPass = new SFShaderPass(WIDTH,HEIGHT);
+      // sfShaderPass.enabled = true;
+      // sfShaderPass.renderToScreen = true;
+      // composer.addPass(sfShaderPass);
+
+      let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+      horseAnim.enabled = true;
+      horseAnim.renderToScreen = true;
+      composer.addPass(horseAnim);
 
       // テクスチャのアップデート
       var events = [
@@ -2682,7 +2729,7 @@ void main()	{
 
         //animMain.update(time);
         //renderer.clear();
-        gpuPass.update(time);
+        //gpuPass.update(time);
         composer.render();
 
         if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
