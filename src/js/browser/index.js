@@ -38,7 +38,7 @@ import HorseAnim from '../HorseAnim.mjs';
 //import SFRydeen from '../SFRydeen';
 import SFGpGpuPass from '../SFGpGpuPass';
 import GlitchPass from '../GlitchPass';
-impoer
+//import { hostname } from 'os';
 
 const SAMPLE_RATE = 48000;
 
@@ -65,13 +65,18 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
 var time;
 
 // メイン
-window.addEventListener('load', function () {
+window.addEventListener('load', async ()=>{
   var qstr = new QueryString();
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == 'true';
   const fps = 60;//parseFloat(params.framerate);
   var WIDTH = window.innerWidth , HEIGHT = window.innerHeight;
-  var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
+
+  //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
 //  var audioAnalyser = new AudioAnalyser();
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
@@ -124,6 +129,7 @@ window.addEventListener('load', function () {
   // composer.addPass(sfShaderPass);
 
   let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  await horseAnim.resLoading;
   horseAnim.enabled = true;
   horseAnim.renderToScreen = true;
   composer.addPass(horseAnim);
@@ -457,9 +463,9 @@ window.addEventListener('load', function () {
     //gpuPass.update(time);
     composer.render();
 
-    if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
-      sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
-    }
+    // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
+    //   sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
+    // }
     let timeMs = time * 1000;
     timeline.update(timeMs);
     TWEEN.update(timeMs);

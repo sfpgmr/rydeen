@@ -51,8 +51,8 @@ function saveImage(buffer,path,width,height)
 {
   return new Promise((resolve,reject)=>{
     sharp(buffer,{raw:{width:width,height:height,channels:4}})
-    .rotate(180)
-    .jpeg()
+    .flip()
+    .webp({lossless:true})
     .toFile(path,(err)=>{
       if(err) reject(err);
       resolve();      
@@ -84,13 +84,16 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
 var time;
 
 // メイン
-window.addEventListener('load', async function(){
+window.addEventListener('load', async ()=>{
   var qstr = new QueryString();
   var params = qstr.parse(window.location.search.substr(1));
-  var preview = params.preview == 'true';
+  var preview = params.preview == false;
   const fps = parseFloat(params.framerate);
   const WIDTH = 1920 , HEIGHT = 1080;
+  //const canvas = document.createElement('canvas');
+  //const context = canvas.getContext('webgl2');
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  //var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
   var audioAnalyser = new AudioAnalyser();
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
@@ -134,6 +137,7 @@ window.addEventListener('load', async function(){
 //   composer.addPass(animMain);
 
   let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  await horseAnim.resLoading;
   horseAnim.enabled = true;
   horseAnim.renderToScreen = false;
   composer.addPass(horseAnim);
@@ -449,7 +453,7 @@ window.addEventListener('load', async function(){
 
     time += frameSpeed;
     if (time > endTime) {
-      Promise.all(writeFilePromises);
+      await Promise.all(writeFilePromises);
       window.close();
       return;
     }
@@ -457,7 +461,7 @@ window.addEventListener('load', async function(){
 
     waveCount += step;
     if(waveCount >= chR.length){
-      Promise.all(writeFilePromises);
+      await Promise.all(writeFilePromises);
       window.close();
     }
 
@@ -486,7 +490,7 @@ window.addEventListener('load', async function(){
       // var data = d3.select('#console').node().toDataURL('image/jpeg');
       // var img  = nativeImage.createFromDataURL(data);
       // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
-      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',WIDTH,HEIGHT));
+      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.webp',WIDTH,HEIGHT));
       await Promise.all(writeFilePromises);
       writeFilePromises.length = 0;
       await renderToFile(preview);

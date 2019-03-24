@@ -1465,7 +1465,7 @@ class SFShaderPass extends THREE.Pass {
  * @author SFPGMR
  */
 
-const NUM_X = 16, NUM_Y = 12;
+const NUM_X = 8, NUM_Y = 6;
 const NUM_OBJS = NUM_X * NUM_Y;
 
 class HorseAnim extends THREE.Pass {
@@ -1486,7 +1486,7 @@ class HorseAnim extends THREE.Pass {
     this.height = height;
 
     // SVGファイルから馬のメッシュを作る
-    const svgText = d3.text('./horse07-1.svg').then(svgText=>{
+    this.resLoading = d3.text('./horse07-1.svg').then(svgText=>{
       const svgLoader = new THREE.SVGLoader();
       const paths = svgLoader.parse(svgText);
       //console.log(paths);
@@ -1495,7 +1495,7 @@ class HorseAnim extends THREE.Pass {
       for (let y = 0; y < NUM_Y; ++y) {
         for (let x = 0; x < NUM_X; ++x) {
           const g = new THREE.Group();
-          g.position.set((x - NUM_X / 2) * 80, (NUM_Y / 2 - y) * 50, 1.0);
+          g.position.set((x - NUM_X / 2) * 160, (NUM_Y / 2 - y) * 100, 1.0);
           groups.push(g);
           scene.add(g);
         }
@@ -1542,7 +1542,7 @@ class HorseAnim extends THREE.Pass {
               depthWrite: true
             });
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.scale.set(0.25, 0.25, 0.25);
+            mesh.scale.set(0.5, 0.5, 0.5);
             mesh.visible = false;
             groups[k].add(mesh);
           }
@@ -1580,11 +1580,11 @@ class HorseAnim extends THREE.Pass {
 				let color_b = (Math.sin(dist + this.c + Math.PI ) + 1.0) /2;
 				const g = this.groups[x + y * NUM_X];
 				const m = g.children;
-				let curX = g.position.x + 4;
-				if(curX > 640){
-					curX = -640;
-				}
- 				g.position.set(curX,g.position.y,g.position.z);
+				// let curX = g.position.x + 4;
+				// if(curX > 640){
+				// 	curX = -640;
+				// }
+ 				// g.position.set(curX,g.position.y,g.position.z);
 
 		
 				for(let k = 0;k < 10;++k){
@@ -3309,8 +3309,8 @@ function saveImage(buffer,path,width,height)
 {
   return new Promise((resolve,reject)=>{
     sharp(buffer,{raw:{width:width,height:height,channels:4}})
-    .rotate(180)
-    .jpeg()
+    .flip()
+    .webp({lossless:true})
     .toFile(path,(err)=>{
       if(err) reject(err);
       resolve();      
@@ -3322,13 +3322,16 @@ function saveImage(buffer,path,width,height)
 var time;
 
 // メイン
-window.addEventListener('load', async function(){
+window.addEventListener('load', async ()=>{
   var qstr = new QueryString();
   var params = qstr.parse(window.location.search.substr(1));
-  var preview = params.preview == 'true';
+  var preview = params.preview == false;
   const fps = parseFloat(params.framerate);
   const WIDTH = 1920 , HEIGHT = 1080;
+  //const canvas = document.createElement('canvas');
+  //const context = canvas.getContext('webgl2');
   var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  //var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
   var audioAnalyser = new Audio();
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
@@ -3362,6 +3365,7 @@ window.addEventListener('load', async function(){
 //   composer.addPass(animMain);
 
   let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  await horseAnim.resLoading;
   horseAnim.enabled = true;
   horseAnim.renderToScreen = false;
   composer.addPass(horseAnim);
@@ -3669,6 +3673,7 @@ window.addEventListener('load', async function(){
 
     time += frameSpeed;
     if (time > endTime) {
+      await Promise.all(writeFilePromises);
       window.close();
       return;
     }
@@ -3676,6 +3681,7 @@ window.addEventListener('load', async function(){
 
     waveCount += step;
     if(waveCount >= chR.length){
+      await Promise.all(writeFilePromises);
       window.close();
     }
 
@@ -3704,7 +3710,7 @@ window.addEventListener('load', async function(){
       // var data = d3.select('#console').node().toDataURL('image/jpeg');
       // var img  = nativeImage.createFromDataURL(data);
       // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
-      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',WIDTH,HEIGHT));
+      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.webp',WIDTH,HEIGHT));
       await Promise.all(writeFilePromises);
       writeFilePromises.length = 0;
       await renderToFile(preview);

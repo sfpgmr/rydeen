@@ -1318,7 +1318,7 @@ void main()	{
      * @author SFPGMR
      */
 
-    const NUM_X = 16, NUM_Y = 12;
+    const NUM_X = 8, NUM_Y = 6;
     const NUM_OBJS = NUM_X * NUM_Y;
 
     class HorseAnim extends THREE.Pass {
@@ -1339,7 +1339,7 @@ void main()	{
         this.height = height;
 
         // SVGファイルから馬のメッシュを作る
-        const svgText = d3.text('./horse07-1.svg').then(svgText=>{
+        this.resLoading = d3.text('./horse07-1.svg').then(svgText=>{
           const svgLoader = new THREE.SVGLoader();
           const paths = svgLoader.parse(svgText);
           //console.log(paths);
@@ -1348,7 +1348,7 @@ void main()	{
           for (let y = 0; y < NUM_Y; ++y) {
             for (let x = 0; x < NUM_X; ++x) {
               const g = new THREE.Group();
-              g.position.set((x - NUM_X / 2) * 80, (NUM_Y / 2 - y) * 50, 1.0);
+              g.position.set((x - NUM_X / 2) * 160, (NUM_Y / 2 - y) * 100, 1.0);
               groups.push(g);
               scene.add(g);
             }
@@ -1395,7 +1395,7 @@ void main()	{
                   depthWrite: true
                 });
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.scale.set(0.25, 0.25, 0.25);
+                mesh.scale.set(0.5, 0.5, 0.5);
                 mesh.visible = false;
                 groups[k].add(mesh);
               }
@@ -1433,11 +1433,11 @@ void main()	{
     				let color_b = (Math.sin(dist + this.c + Math.PI ) + 1.0) /2;
     				const g = this.groups[x + y * NUM_X];
     				const m = g.children;
-    				let curX = g.position.x + 4;
-    				if(curX > 640){
-    					curX = -640;
-    				}
-     				g.position.set(curX,g.position.y,g.position.z);
+    				// let curX = g.position.x + 4;
+    				// if(curX > 640){
+    				// 	curX = -640;
+    				// }
+     				// g.position.set(curX,g.position.y,g.position.z);
 
     		
     				for(let k = 0;k < 10;++k){
@@ -2437,13 +2437,18 @@ void main()	{
     var time;
 
     // メイン
-    window.addEventListener('load', function () {
+    window.addEventListener('load', async ()=>{
       var qstr = new QueryString();
       var params = qstr.parse(window.location.search.substr(1));
       var preview = params.preview == 'true';
       const fps = 60;//parseFloat(params.framerate);
       var WIDTH = window.innerWidth , HEIGHT = window.innerHeight;
-      var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('webgl2');
+      //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
+
+      //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
     //  var audioAnalyser = new AudioAnalyser();
       renderer.setSize(WIDTH, HEIGHT);
       renderer.setClearColor(0x000000, 1);
@@ -2453,9 +2458,7 @@ void main()	{
 
       d3.select('#content').node().appendChild(renderer.domElement);
       renderer.clear();
-      var frameDelta = 30 / fps;
       time = 0;//(60420 - 1500) /1000 ;//0.0;
-      var frameNo = 0;
       var frameSpeed = 1.0 / fps; 
 
       // Post Effect
@@ -2481,6 +2484,7 @@ void main()	{
       // composer.addPass(sfShaderPass);
 
       let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+      await horseAnim.resLoading;
       horseAnim.enabled = true;
       horseAnim.renderToScreen = true;
       composer.addPass(horseAnim);
@@ -2716,12 +2720,6 @@ void main()	{
         // }
 
         time += frameSpeed;
-        // if (time > endTime) {
-        //   Promise.all(writeFilePromises);
-        //   window.close();
-        //   return;
-        // }
-        ++frameNo;
         // if(waveCount >= chR.length){
         //   Promise.all(writeFilePromises);
         //   window.close();
@@ -2732,9 +2730,9 @@ void main()	{
         //gpuPass.update(time);
         composer.render();
 
-        if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
-          sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
-        }
+        // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
+        //   sfShaderPass.uniforms.time.value += 0.105 * 4 * frameDelta;
+        // }
         let timeMs = time * 1000;
         timeline.update(timeMs);
         Tween.update(timeMs);

@@ -3,7 +3,7 @@
  */
 "use strict";
 
-const NUM_X = 16, NUM_Y = 12;
+const NUM_X = 8, NUM_Y = 6;
 const NUM_OBJS = NUM_X * NUM_Y;
 
 export default class HorseAnim extends THREE.Pass {
@@ -24,7 +24,7 @@ export default class HorseAnim extends THREE.Pass {
     this.height = height;
 
     // SVGファイルから馬のメッシュを作る
-    const svgText = d3.text('./horse07-1.svg').then(svgText=>{
+    this.resLoading = d3.text('./horse07-1.svg').then(svgText=>{
       const svgLoader = new THREE.SVGLoader();
       const paths = svgLoader.parse(svgText);
       //console.log(paths);
@@ -33,7 +33,7 @@ export default class HorseAnim extends THREE.Pass {
       for (let y = 0; y < NUM_Y; ++y) {
         for (let x = 0; x < NUM_X; ++x) {
           const g = new THREE.Group();
-          g.position.set((x - NUM_X / 2) * 80, (NUM_Y / 2 - y) * 50, 1.0);
+          g.position.set((x - NUM_X / 2) * 160, (NUM_Y / 2 - y) * 100, 1.0);
           groups.push(g);
           scene.add(g);
         }
@@ -80,7 +80,7 @@ export default class HorseAnim extends THREE.Pass {
               depthWrite: true
             });
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.scale.set(0.25, 0.25, 0.25);
+            mesh.scale.set(0.5, 0.5, 0.5);
             mesh.visible = false;
             groups[k].add(mesh);
           }
@@ -120,11 +120,11 @@ export default class HorseAnim extends THREE.Pass {
 				let color_b = (Math.sin(dist + this.c + Math.PI ) + 1.0) /2;
 				const g = this.groups[x + y * NUM_X];
 				const m = g.children;
-				let curX = g.position.x + 4;
-				if(curX > 640){
-					curX = -640;
-				}
- 				g.position.set(curX,g.position.y,g.position.z);
+				// let curX = g.position.x + 4;
+				// if(curX > 640){
+				// 	curX = -640;
+				// }
+ 				// g.position.set(curX,g.position.y,g.position.z);
 
 		
 				for(let k = 0;k < 10;++k){
