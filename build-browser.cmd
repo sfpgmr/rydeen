@@ -55,7 +55,7 @@ copy /y src\html\browser\index.html !src!
 xcopy /s /q /y !src! !target!
 
 if !www!=="launch" (
-  livereloadx -s !target!
+  livereloadx -s !target! --include *.glb
 )
 
 

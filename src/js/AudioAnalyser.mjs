@@ -27,9 +27,13 @@ import *  as fs  from 'fs';
 var readFile = denodeify(fs.readFile);
 
 export default class Audio {
-  load() {
-    var context = new AudioContext();
-
+  constructor(sampleRate){
+    this.sampleRate = sampleRate;
+    this.context = new AudioContext({sampleRate:sampleRate});
+  }
+  load(filename) {
+    const context = this.context;
+    
     function toArrayBuffer(buffer) {
       var ab = new ArrayBuffer(buffer.length);
       var view = new Uint8Array(ab);
@@ -39,7 +43,7 @@ export default class Audio {
       return ab;
     }
     let self = this;
-   return  readFile('./media/Rydeen.wav')
+   return  readFile(filename)
     .then(function(data){
       return new Promise((resolve,reject)=>{
         var arrayBuf = toArrayBuffer(data);
@@ -48,13 +52,13 @@ export default class Audio {
             console.log('error');
           }
           let source = context.createBufferSource();
-          self.source = source;
+          //self.source = source;
           source.buffer = buffer;
           source.connect(context.destination);
           let analyser = context.createAnalyser();
-          self.analyser = analyser;
+          //self.analyser = analyser;
           source.connect(analyser);
-          self.context = context;
+          //self.context = context;
           resolve(source);
         },function(err){
           reject(err);

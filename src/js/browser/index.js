@@ -25,22 +25,24 @@
 //':35729/livereload.js?snipver=2"></' + 'script>');
 "use strict";
 
-import denodeify from '../denodeify'; 
+//import denodeify from '../denodeify'; 
 import TWEEN from 'tween.js';
 import TimeLine  from '../TimeLine';
 //import sharp  from 'sharp';
 import QueryString  from '../QueryString';
-import SF8Pass from '../SF8Pass';
+//import SF8Pass from '../SF8Pass';
 //import SFShaderPass from '../SFShaderPass';
 import HorseAnim from '../HorseAnim.mjs';
 
 //import SFCapturePass from '../SFCapturePass';
-//import SFRydeen from '../SFRydeen';
-import SFGpGpuPass from '../SFGpGpuPass';
-import GlitchPass from '../GlitchPass';
+import SFRydeen from '../SFRydeen';
+//import SFGpGpuPass from '../SFGpGpuPass';
+//import GlitchPass from '../GlitchPass';
 //import { hostname } from 'os';
+//import AudioAnalyser from '../AudioAnalyser.mjs';
 
-const SAMPLE_RATE = 48000;
+
+const SAMPLE_RATE = 96000;
 
 // from gist
 // https://gist.github.com/gabrielflorit/3758456
@@ -62,7 +64,7 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
   return mesh;
 }
 
-var time;
+var time,chR,chL;
 
 // メイン
 window.addEventListener('load', async ()=>{
@@ -73,11 +75,12 @@ window.addEventListener('load', async ()=>{
   var WIDTH = window.innerWidth , HEIGHT = window.innerHeight;
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl2');
-  //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
-  var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
+  var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  //var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true,autoClear:false});
+  
 
   //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
-//  var audioAnalyser = new AudioAnalyser();
+  //const audioAnalyser = new AudioAnalyser();
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
   renderer.domElement.id = 'console';
@@ -94,7 +97,7 @@ window.addEventListener('load', async ()=>{
   var frameDelta = 30 / fps;
   var waveCount = 0;
   var index = 0;
-  time = 0;//(60420 - 1500) /1000 ;//0.0;
+  time = 0//20.140 * 1000 - 1500;//60420;//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
   var endTime = 60.0 * 4.0 + 30.0;
   var frameSpeed = 1.0 / fps; 
@@ -112,11 +115,19 @@ window.addEventListener('load', async ()=>{
   composer.setSize(WIDTH, HEIGHT);
 
   //let renderPass = new THREE.RenderPass(scene, camera);
-//  var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-//  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-//  animMain.renderToScreen = false;
-//  animMain.enabled = true;
-//  composer.addPass(animMain);
+  var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+  await animMain.init;
+  //var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+  animMain.renderToScreen = false;
+  animMain.enabled = true;
+
+  // var horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  // await horseAnim.resLoading;
+  // horseAnim.renderToScreen = true;
+  // horseAnim.enabled = true;
+  // composer.addPass(horseAnim);
+
+  composer.addPass(animMain);
 
   // let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   // gpuPass.renderToScreen = false;
@@ -128,11 +139,6 @@ window.addEventListener('load', async ()=>{
   // sfShaderPass.renderToScreen = true;
   // composer.addPass(sfShaderPass);
 
-  let horseAnim = new HorseAnim(WIDTH,HEIGHT);
-  await horseAnim.resLoading;
-  horseAnim.enabled = true;
-  horseAnim.renderToScreen = true;
-  composer.addPass(horseAnim);
 
   
 //   let glitchPass = new GlitchPass();
@@ -217,24 +223,26 @@ window.addEventListener('load', async ()=>{
   // テクスチャのアップデート
   var events = [
     // 馬のフェードイン・フェードアウト
-    // {time:60420 - 1500,func:animMain.horseFadein()},
-    // {time:60240 + 20140 - 3000 - 1500,func:animMain.horseFadeout()},
-    // {time:134266 - 1500,func:animMain.horseFadein()},
-    // {time:134266 + 20140 - 3000 - 1500,func:animMain.horseFadeout()},
-    // // シリンダーの回転
-    // {time:0,func:start(animMain.rotateCilynder.bind(animMain))},
-    // // カメラワーク
-    // {time:20.140 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
-    // {time:32.727 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
-    // {time:46.993 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
-    // {time:60.420 * 1000 - 1500,func:start(animMain.cameraTween4.bind(animMain))},
-    // {time:79.720 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
-    // {time:93.986 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
-    // {time:106.573 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
-    // {time:120.839 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
-    // {time:133.427 * 1000 - 1500,func:start(animMain.cameraTween4.bind(animMain))},
-    // {time:180.420 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
-    // drums fill
+    {time:21.140 * 1000 - 1500,func:animMain.horseFadein()},
+    {time:22.727 * 1000 - 1500,func:animMain.horseFadeout()},
+    {time:60420 - 1500,func:animMain.horseFadein()},
+    {time:60240 + 20140 - 3000 - 1500,func:animMain.horseFadeout()},
+    {time:134266 - 1500,func:animMain.horseFadein()},
+    {time:134266 + 20140 - 3000 - 1500,func:animMain.horseFadeout()},
+    // シリンダーの回転
+    {time:0,func:start(animMain.rotateCilynder.bind(animMain))},
+    // カメラワーク
+    {time:20.140 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
+    {time:32.727 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
+    {time:46.993 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
+    {time:60.420 * 1000 - 1500,func:start(animMain.cameraTween4.bind(animMain))},
+    {time:79.720 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
+    {time:93.986 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
+    {time:106.573 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
+    {time:120.839 * 1000 - 1500,func:start(animMain.cameraTween.bind(animMain))},
+    {time:133.427 * 1000 - 1500,func:start(animMain.cameraTween4.bind(animMain))},
+    {time:180.420 * 1000 - 1500,func:start(animMain.cameraTween2.bind(animMain))},
+    // //drums fill
     // {time:5.874 * 1000 - 1500,func:start(fillEffect)},
     // {time:6.294 * 1000 - 1500,func:start(fillEffect)},
 
@@ -391,9 +399,9 @@ window.addEventListener('load', async ()=>{
     // {time:234.234 * 1000 - 1500 + 105 * 4,func:start(fillEffect)},
     // {time:234.234 * 1000 - 1500 + 105 * 5,func:start(fillEffect)},
 
-    // 間奏エフェクト
-    //{time:154.406 * 1000 - 1500,func:start(intEffect)}
-    //{time:0,func:start(intEffect)}
+    // //間奏エフェクト
+    // {time:154.406 * 1000 - 1500,func:start(intEffect)},
+    // {time:0,func:start(intEffect)}
 
   ];
   
@@ -445,20 +453,18 @@ window.addEventListener('load', async ()=>{
     // }
 
     time += frameSpeed;
-    // if (time > endTime) {
-    //   Promise.all(writeFilePromises);
-    //   window.close();
-    //   return;
-    // }
+    if (time > endTime) {
+      return;
+    }
     ++frameNo;
 
     waveCount += step;
-    // if(waveCount >= chR.length){
-    //   Promise.all(writeFilePromises);
-    //   window.close();
-    // }
+    if(waveCount >= chR.length){
+      return;
+    }
 
-    //animMain.update(time);
+    animMain.update(time);
+    //horseAnim.update();
     //renderer.clear();
     //gpuPass.update(time);
     composer.render();
@@ -473,6 +479,21 @@ window.addEventListener('load', async ()=>{
     requestAnimationFrame(render.bind(null, preview));
   }
   
+
+  // ファイルのロード
+  await new Promise((resolve,reject)=>{
+    let loader = new THREE.AudioLoader();
+    loader.load('../../media/rydeen.wav',(buffer)=>{
+      chL = animMain.chL = buffer.getChannelData(0);
+      chR = animMain.chR = buffer.getChannelData(1);
+      //const audioListener = new THREE.AudioListener();
+      //let a = new THREE.Audio(audioListener);
+      //a.setBuffer(buffer);
+      //a.play();
+      resolve();
+    });
+  });
+
   render(preview);
 
 });

@@ -37,6 +37,7 @@ import sharp  from 'sharp';
 import QueryString  from '../QueryString.mjs';
 import SF8Pass from '../SF8Pass.mjs';
 import SFShaderPass from '../SFShaderPass.mjs';
+import SFShaderPass2 from '../SFShaderPass2.mjs';
 import HorseAnim from '../HorseAnim.mjs';
 import SFCapturePass from '../SFCapturePass.mjs';
 import SFRydeen from '../SFRydeen.mjs';
@@ -52,13 +53,12 @@ function saveImage(buffer,path,width,height)
   return new Promise((resolve,reject)=>{
     sharp(buffer,{raw:{width:width,height:height,channels:4}})
     .flip()
-    .webp({lossless:true})
+    //.webp({lossless:true})
     .toFile(path,(err)=>{
       if(err) reject(err);
       resolve();      
     });
   });
-
 }
 
 // from gist
@@ -89,12 +89,13 @@ window.addEventListener('load', async ()=>{
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == false;
   const fps = parseFloat(params.framerate);
+  console.log('framerate:',fps);
   const WIDTH = 1920 , HEIGHT = 1080;
-  //const canvas = document.createElement('canvas');
-  //const context = canvas.getContext('webgl2');
-  var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
-  //var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
-  var audioAnalyser = new AudioAnalyser();
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
+  var audioAnalyser = new AudioAnalyser(SAMPLE_RATE);
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
   renderer.domElement.id = 'console';
@@ -126,21 +127,23 @@ window.addEventListener('load', async ()=>{
   // Post Effect
 
   let composer = new THREE.EffectComposer(renderer);
+  composer.setSize(WIDTH, HEIGHT);
 
 
   //let renderPass = new THREE.RenderPass(scene, camera);
-//   var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-// //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-//   animMain.renderToScreen = false;
-//   animMain.enabled = true;
-//   composer.setSize(WIDTH, HEIGHT);
-//   composer.addPass(animMain);
+  // var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+  var animMain = new SFShaderPass2(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+//  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+  animMain.renderToScreen = false;
+  animMain.enabled = true;
+  await animMain.init;
 
-  let horseAnim = new HorseAnim(WIDTH,HEIGHT);
-  await horseAnim.resLoading;
-  horseAnim.enabled = true;
-  horseAnim.renderToScreen = false;
-  composer.addPass(horseAnim);
+  // let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  // await horseAnim.resLoading;
+  // horseAnim.enabled = true;
+  // horseAnim.renderToScreen = false;
+  // composer.addPass(horseAnim);
+  composer.addPass(animMain);
 
 
   // let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
@@ -162,15 +165,15 @@ window.addEventListener('load', async ()=>{
   let dotScreen = new THREE.ShaderPass(THREE.DotScreenShader);
   dotScreen.uniforms['scale'].value = 4;
   dotScreen.enabled = false;
-  dotScreen.renderToScreen = false;
+  dotScreen.renderToScreen = preview;
 
   composer.addPass(dotScreen);
 
-  let sf8Pass = new SF8Pass();
-//  rgbShift.uniforms['amount'].value = 0.0035;
-  sf8Pass.enabled = true;
-  sf8Pass.renderToScreen = preview;
-  composer.addPass(sf8Pass);
+//   let sf8Pass = new SF8Pass();
+// //  rgbShift.uniforms['amount'].value = 0.0035;
+//   sf8Pass.enabled = true;
+//   sf8Pass.renderToScreen = preview;
+//   composer.addPass(sf8Pass);
 
   // let rgbShift = new THREE.SF8Pass(THREE.RGBShiftShader);
   // rgbShift.uniforms['amount'].value = 0.0035;
@@ -235,14 +238,15 @@ window.addEventListener('load', async ()=>{
   // テクスチャのアップデート
   const START_OFFSET = 1678;
   var events = [
-    // // 馬のフェードイン・フェードアウト
+    // 馬のフェードイン・フェードアウト
     // {time:60420 - START_OFFSET,func:animMain.horseFadein()},
     // {time:60240 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
     // {time:134266 - START_OFFSET,func:animMain.horseFadein()},
     // {time:134266 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
-    // // シリンダーの回転
-    // {time:0,func:start(animMain.rotateCilynder.bind(animMain))},
-    // // カメラワーク
+    // シリンダーの回転
+
+    //{time:0,func:start(animMain.rotateCilynder.bind(animMain))},
+    // カメラワーク
     // {time:20.140 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
     // {time:32.727 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
     // {time:46.993 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
@@ -452,6 +456,7 @@ window.addEventListener('load', async ()=>{
     }
 
     time += frameSpeed;
+    //console.log(endTime,time,chR.length,waveCount);
     if (time > endTime) {
       await Promise.all(writeFilePromises);
       window.close();
@@ -465,8 +470,11 @@ window.addEventListener('load', async ()=>{
       window.close();
     }
 
-    //animMain.update(time);
+    animMain.update(time);
+    //horseAnim.update();
+
     //gpuPass.update(time);
+    
     composer.render();
 
     // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
@@ -490,7 +498,7 @@ window.addEventListener('load', async ()=>{
       // var data = d3.select('#console').node().toDataURL('image/jpeg');
       // var img  = nativeImage.createFromDataURL(data);
       // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
-      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.webp',WIDTH,HEIGHT));
+      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpg',WIDTH,HEIGHT));
       await Promise.all(writeFilePromises);
       writeFilePromises.length = 0;
       await renderToFile(preview);
@@ -515,12 +523,30 @@ window.addEventListener('load', async ()=>{
   //  }
   //  renderer.render(scene, camera);
   //};
-  //await Promise.all([animMain.init,gpuPass.init]);
-  await audioAnalyser.load();
-  chL = audioAnalyser.source.buffer.getChannelData(0);
-  chR = audioAnalyser.source.buffer.getChannelData(1);
-  //animMain.chL = chL;
-  //animMain.chR = chR;
+  await animMain.init;
+  //await Promise.all([animMain.init/*,gpuPass.init*/]);
+  let files = [
+    {path:'./media/separate/RS010.wav',amp:3.0},
+    {path:'./media/separate/RS009.wav',amp:4.0},
+    {path:'./media/separate/RS008.wav',amp:2.0},
+    {path:'./media/separate/RS007.wav',amp:4.0},
+    {path:'./media/separate/RS006.wav',amp:4.0},
+    {path:'./media/separate/RS005.wav',amp:4.5}, 
+    {path:'./media/separate/RS004.wav',amp:4.5},
+    {path:'./media/separate/RS003.wav',amp:2.0},
+    {path:'./media/separate/RS002.wav',amp:2.0},
+    {path:'./media/separate/RS001.wav',amp:1.3},
+    {path:'./media/separate/RS.wav',amp:1.0}
+  ];
+
+  for(const file of files ){
+    let source = await audioAnalyser.load(file.path);
+    chL = source.buffer.getChannelData(0);
+    chR = source.buffer.getChannelData(1);
+    animMain.chL.push(chL);
+    animMain.amp.push(file.amp);
+    animMain.chR.push(chR);
+  }
   await renderToFile(preview);
 
 });

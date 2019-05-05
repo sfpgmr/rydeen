@@ -3,15 +3,46 @@
  */
 "use strict";
 
-const NUM_X = 8, NUM_Y = 6;
+const NUM_X = 16, NUM_Y = 12;
 const NUM_OBJS = NUM_X * NUM_Y;
+
+const vs = 
+`
+varying vec2 vUv;
+
+
+
+void main()	{
+  vUv = uv;
+  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const fs = 
+`
+uniform sampler2D texture;
+uniform sampler2D tDiffuse;
+varying vec2 vUv;
+void main(){
+  vec4 c1,c2;
+  
+  c1 = texture2D(tDiffuse, vUv);
+  c2 = texture2D(texture, vUv);
+
+  if(length(vec3(c2.x,c2.y,c2.z)) > 0.0 ) 
+  {
+    gl_FragColor = c2;
+  } else {
+    gl_FragColor = c1;
+  }  
+}
+`;
 
 export default class HorseAnim extends THREE.Pass {
   constructor(width, height) {
     super();
 
-
-    // シーンの作成
     const scene = this.scene = new THREE.Scene();
 
     // カメラの作成
@@ -24,22 +55,22 @@ export default class HorseAnim extends THREE.Pass {
     this.height = height;
 
     // SVGファイルから馬のメッシュを作る
-    this.resLoading = d3.text('./horse07-1.svg').then(svgText=>{
+    this.resLoading = d3.text('./horse07-2.svg').then(svgText=>{
       const svgLoader = new THREE.SVGLoader();
-      const paths = svgLoader.parse(svgText);
+      const paths = svgLoader.parse(svgText).paths;
       //console.log(paths);
       const groups = this.groups = [];
   
       for (let y = 0; y < NUM_Y; ++y) {
         for (let x = 0; x < NUM_X; ++x) {
           const g = new THREE.Group();
-          g.position.set((x - NUM_X / 2) * 160, (NUM_Y / 2 - y) * 100, 1.0);
+          g.position.set((x - NUM_X / 2) * 80, (NUM_Y / 2 - y) * 50, 1.0);
           groups.push(g);
           scene.add(g);
         }
       }
   
-      for (var i = 0; i < paths.length; i++) {
+      for (let i = 0; i < paths.length; i++) {
         const path = paths[i];
   
         const shapes = path.toShapes(true, false);
@@ -56,20 +87,20 @@ export default class HorseAnim extends THREE.Pass {
           let ex = path.currentPath.currentPoint.x;
           let ey = path.currentPath.currentPoint.y;
   
-          for (let i = 0, e = positions.length; i < e; i += 3) {
-            sx = Math.min(sx, positions[i + 0/* x */]);
-            sy = Math.min(sy, positions[i + 1/* y */]);
-            ex = Math.max(ex, positions[i + 0/* x */]);
-            ey = Math.max(ey, positions[i + 1/* y */]);
+          for (let k = 0, e = positions.length; k < e; k += 3) {
+            sx = Math.min(sx, positions[k + 0/* x */]);
+            sy = Math.min(sy, positions[k + 1/* y */]);
+            ex = Math.max(ex, positions[k + 0/* x */]);
+            ey = Math.max(ey, positions[k + 1/* y */]);
           }
   
           let cx = ex - (ex - sx) / 2;
           let cy = ey - (ey - sy) / 2;
   
-          for (let i = 0, e = positions.length; i < e; i += 3) {
-            positions[i + 0/* x */] -= cx;
-            positions[i + 1] = (positions[i + 1] - cy) * -1;
-            positions[i + 2] = 10.0;
+          for (let k = 0, e = positions.length; k < e; k += 3) {
+            positions[k + 0/* x */] -= cx;
+            positions[k + 1] = (positions[k + 1] - cy) * -1;
+            positions[k + 2] = 10.0;
           }
   
   
@@ -80,7 +111,7 @@ export default class HorseAnim extends THREE.Pass {
               depthWrite: true
             });
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.scale.set(0.5, 0.5, 0.5);
+            mesh.scale.set(0.25, 0.25, 0.25);
             mesh.visible = false;
             groups[k].add(mesh);
           }
@@ -92,8 +123,6 @@ export default class HorseAnim extends THREE.Pass {
       this.cb = 143 | 0;
       this.c = 0;
       this.index = 0;
-
-
   }
 
   setSize(width, height) {
@@ -105,7 +134,7 @@ export default class HorseAnim extends THREE.Pass {
 
   }
 
-  render(renderer, writeBuffer, readBuffer, delta, maskActive) {
+  update() {
 
     this.c += 0.1;
 		const idx = this.index | 0;
@@ -146,21 +175,25 @@ export default class HorseAnim extends THREE.Pass {
 			this.ca += 360 | 0;
 		}
 
-		if (this.index > 9) this.index = 0;    
+    if (this.index > 9) this.index = 0;    
 
+
+  }
+
+  render(renderer, writeBuffer, readBuffer, delta, maskActive) {
 
     if (this.renderToScreen) {
-
       renderer.render(this.scene, this.camera);
 
     } else {
-      let backup = renderer.getRenderTarget();
-      renderer.setRenderTarget(writeBuffer);
-      this.clear && renderer.clear();
-      renderer.render(this.scene, this.camera);
-      renderer.setRenderTarget(backup);
 
-      //renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+      renderer.render(this.scene, this.camera);
+			renderer.setRenderTarget(backup);
+
+      //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
     }
 

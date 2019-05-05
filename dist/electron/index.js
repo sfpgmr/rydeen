@@ -2,7 +2,7 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var fs = require('fs');
+var fs$1 = require('fs');
 require('electron');
 var sharp = _interopDefault(require('sharp'));
 
@@ -1464,16 +1464,155 @@ class SFShaderPass extends THREE.Pass {
 /**
  * @author SFPGMR
  */
+//import * as THREE from 'three';
+const CHANNEL = 11;
+const WAVE_WIDTH = 16384;
 
-const NUM_X = 8, NUM_Y = 6;
+let vertexShader$1 =
+  `
+varying vec2 vUv;
+void main()	{
+		vUv = uv;
+    gl_Position = vec4( position, 1.0 );
+  }
+`;
+let fragmentShader$1 =
+  `
+uniform sampler2D tDiffuse;
+uniform vec2 resolution;
+uniform float time;
+varying vec2 vUv;
+void main()	{
+
+  // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
+  vec2 uv = gl_FragCoord.xy / resolution.xy;
+  float v = texture2D(tDiffuse, uv).r;
+  if(abs(v - 0.5) < 0.002 ) discard;
+  //v = clamp((v - 0.5) * 4.0 + 0.5,0.0,1.0) / (CHANNEL * 2.0);
+  v /= (CHANNEL * 2.0);
+  float y = floor(uv.y * CHANNEL * 2.0) / (CHANNEL * 2.0) + v;
+  //float c = step(abs(uv.y - y),0.0008);
+  float c = 1.0 - smoothstep(0.0005,0.001,abs(uv.y - y));
+  //float c = clamp(abs(uv.y - y),0.0,1.0);
+  
+  gl_FragColor = vec4(c,c,c,1.0);
+}
+`;
+
+//     let geometry = new THREE.PlaneBufferGeometry( 1920, 1080 );
+let uniforms$1 = {
+  tDiffuse: { value: null },
+  resolution: { value: new THREE.Vector2() },
+  time: { value: 0.0 }
+};
+
+class SFShaderPass2 extends THREE.Pass {
+  constructor(width, height, fps, endTime, sampleRate = 48000) {
+    super();
+
+    this.width = width;
+    this.height = height;
+    this.time = 0;
+    this.chR = [];
+    this.chL = [];
+    this.amp = [];
+    this.fps = fps;
+    this.endTime = endTime;
+    this.step = sampleRate / fps;
+    this.sampleRate = sampleRate;
+    this.frameDelta = 30 / fps;
+    //this.fftsize = 256;
+    //this.fft = new FFT(this.fftsize, sampleRate);
+    this.frameSpeed = 1.0 / fps;
+    this.delta = this.frameSpeed;
+    this.radius = 1000, this.theta = 0;
+    this.fftmeshSpeed = 50 * this.frameDelta;
+
+    this.uniforms = THREE.UniformsUtils.clone(uniforms$1);
+    this.uniforms.resolution.value.x = width;
+    this.uniforms.resolution.value.y = height;
+    this.material = new THREE.ShaderMaterial({
+      uniforms: this.uniforms,
+      vertexShader: vertexShader$1,
+      fragmentShader: fragmentShader$1,
+      defines: {
+        CHANNEL: CHANNEL + '.0'
+      }
+    });
+
+    this.camera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
+    this.scene = new THREE.Scene();
+
+    this.audioBuffer = new Uint8Array(WAVE_WIDTH * CHANNEL * 2);
+
+    this.texture = new THREE.DataTexture(this.audioBuffer, WAVE_WIDTH, CHANNEL * 2, THREE.LuminanceFormat, THREE.UnsignedByteType);
+    this.texture.needsUpdate = true;
+    this.quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2,2), null);
+    this.scene.add(this.quad);
+    //this.setSize(this.width,this.height);
+
+  }
+
+  setSize(width, height) {
+    this.width = this.uniforms.resolution.value.x = width;
+    this.height = this.uniforms.resolution.value.y = height;
+  }
+
+  update(time) {
+    this.time = time;
+    let waveCount = ~~(time * this.sampleRate);
+    const wsize = WAVE_WIDTH;
+    for (let i = 0; i < wsize; ++i) {
+      for(let k = 0;k < CHANNEL;++k){
+        let r = 0, l = 0;
+        if ((waveCount + i) < (this.chR[k].length)) {
+          r = this.chR[k][waveCount + i];
+          l = this.chL[k][waveCount + i];
+        }
+        this.audioBuffer[i + k * 2 * wsize] = ((r * this.amp[k] + 1.0) / 2 * 0xff) | 0;
+        this.audioBuffer[i + (k * 2 + 1) * wsize] = ((l * this.amp[k] + 1.0) / 2 * 0xff) | 0;
+      }
+    }
+    //this.texture.set(this.audioBuffer);
+    this.texture.needsUpdate = true;
+
+  }
+
+  render(renderer, writeBuffer, readBuffer, delta, maskActive) {
+    this.uniforms["tDiffuse"].value = this.texture;
+    this.uniforms["time"].value = this.time;
+    //this.uniforms.needsUpdate = true;
+    this.quad.material = this.material;
+
+    if (this.renderToScreen) {
+
+      renderer.render(this.scene, this.camera);
+
+    } else {
+      let backup = renderer.getRenderTarget();
+      renderer.setRenderTarget(writeBuffer);
+      this.clear && renderer.clear();
+      renderer.render(this.scene, this.camera);
+      renderer.setRenderTarget(backup);
+
+      //renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+
+    }
+
+  }
+}
+
+/**
+ * @author SFPGMR
+ */
+
+const NUM_X = 16, NUM_Y = 12;
 const NUM_OBJS = NUM_X * NUM_Y;
 
 class HorseAnim extends THREE.Pass {
   constructor(width, height) {
     super();
 
-
-    // シーンの作成
     const scene = this.scene = new THREE.Scene();
 
     // カメラの作成
@@ -1486,22 +1625,22 @@ class HorseAnim extends THREE.Pass {
     this.height = height;
 
     // SVGファイルから馬のメッシュを作る
-    this.resLoading = d3.text('./horse07-1.svg').then(svgText=>{
+    this.resLoading = d3.text('./horse07-2.svg').then(svgText=>{
       const svgLoader = new THREE.SVGLoader();
-      const paths = svgLoader.parse(svgText);
+      const paths = svgLoader.parse(svgText).paths;
       //console.log(paths);
       const groups = this.groups = [];
   
       for (let y = 0; y < NUM_Y; ++y) {
         for (let x = 0; x < NUM_X; ++x) {
           const g = new THREE.Group();
-          g.position.set((x - NUM_X / 2) * 160, (NUM_Y / 2 - y) * 100, 1.0);
+          g.position.set((x - NUM_X / 2) * 80, (NUM_Y / 2 - y) * 50, 1.0);
           groups.push(g);
           scene.add(g);
         }
       }
   
-      for (var i = 0; i < paths.length; i++) {
+      for (let i = 0; i < paths.length; i++) {
         const path = paths[i];
   
         const shapes = path.toShapes(true, false);
@@ -1518,20 +1657,20 @@ class HorseAnim extends THREE.Pass {
           let ex = path.currentPath.currentPoint.x;
           let ey = path.currentPath.currentPoint.y;
   
-          for (let i = 0, e = positions.length; i < e; i += 3) {
-            sx = Math.min(sx, positions[i + 0/* x */]);
-            sy = Math.min(sy, positions[i + 1/* y */]);
-            ex = Math.max(ex, positions[i + 0/* x */]);
-            ey = Math.max(ey, positions[i + 1/* y */]);
+          for (let k = 0, e = positions.length; k < e; k += 3) {
+            sx = Math.min(sx, positions[k + 0/* x */]);
+            sy = Math.min(sy, positions[k + 1/* y */]);
+            ex = Math.max(ex, positions[k + 0/* x */]);
+            ey = Math.max(ey, positions[k + 1/* y */]);
           }
   
           let cx = ex - (ex - sx) / 2;
           let cy = ey - (ey - sy) / 2;
   
-          for (let i = 0, e = positions.length; i < e; i += 3) {
-            positions[i + 0/* x */] -= cx;
-            positions[i + 1] = (positions[i + 1] - cy) * -1;
-            positions[i + 2] = 10.0;
+          for (let k = 0, e = positions.length; k < e; k += 3) {
+            positions[k + 0/* x */] -= cx;
+            positions[k + 1] = (positions[k + 1] - cy) * -1;
+            positions[k + 2] = 10.0;
           }
   
   
@@ -1542,7 +1681,7 @@ class HorseAnim extends THREE.Pass {
               depthWrite: true
             });
             const mesh = new THREE.Mesh(geometry, material);
-            mesh.scale.set(0.5, 0.5, 0.5);
+            mesh.scale.set(0.25, 0.25, 0.25);
             mesh.visible = false;
             groups[k].add(mesh);
           }
@@ -1554,8 +1693,6 @@ class HorseAnim extends THREE.Pass {
       this.cb = 143 | 0;
       this.c = 0;
       this.index = 0;
-
-
   }
 
   setSize(width, height) {
@@ -1567,7 +1704,7 @@ class HorseAnim extends THREE.Pass {
 
   }
 
-  render(renderer, writeBuffer, readBuffer, delta, maskActive) {
+  update() {
 
     this.c += 0.1;
 		const idx = this.index | 0;
@@ -1605,21 +1742,25 @@ class HorseAnim extends THREE.Pass {
 			this.ca += 360 | 0;
 		}
 
-		if (this.index > 9) this.index = 0;    
+    if (this.index > 9) this.index = 0;    
 
+
+  }
+
+  render(renderer, writeBuffer, readBuffer, delta, maskActive) {
 
     if (this.renderToScreen) {
-
       renderer.render(this.scene, this.camera);
 
     } else {
-      let backup = renderer.getRenderTarget();
-      renderer.setRenderTarget(writeBuffer);
-      this.clear && renderer.clear();
-      renderer.render(this.scene, this.camera);
-      renderer.setRenderTarget(backup);
 
-      //renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+			let backup = renderer.getRenderTarget();
+			renderer.setRenderTarget(writeBuffer);
+			this.clear && renderer.clear();
+      renderer.render(this.scene, this.camera);
+			renderer.setRenderTarget(backup);
+
+      //renderer.render(this.scene, this.camera, writeBuffer, this.clear);
 
     }
 
@@ -1679,9 +1820,108 @@ class SFCapturePass extends THREE.Pass {
  * @author SFPGMR
  */
 
+
+const vs = 
+`
+#define USE_MAP
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <envmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+	#include <uv_vertex>
+	#include <uv2_vertex>
+	#include <color_vertex>
+	#include <skinbase_vertex>
+	#ifdef USE_ENVMAP
+	#include <beginnormal_vertex>
+	#include <morphnormal_vertex>
+	#include <skinnormal_vertex>
+	#include <defaultnormal_vertex>
+	#endif
+	#include <begin_vertex>
+	#include <morphtarget_vertex>
+	#include <skinning_vertex>
+	#include <project_vertex>
+	#include <logdepthbuf_vertex>
+	#include <worldpos_vertex>
+	#include <clipping_planes_vertex>
+	#include <envmap_vertex>
+	#include <fog_vertex>
+}
+`;
+
+// const vs = 
+// `
+// #define USE_MAP
+// #include <common>
+// #include <uv_pars_vertex>
+// #ifdef USE_COLOR
+// varying vec4 vColor;
+// #endif
+
+// void main()	{
+// 	#include <uv_vertex>
+// #ifdef USE_COLOR
+//   vColor = color;
+// #endif
+//   vUv = uv;
+//   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+//   gl_Position = projectionMatrix * mvPosition;
+// }
+// `;
+
+const fs = 
+`
+#define USE_MAP
+uniform sampler2D map;
+uniform sampler2D tDiffuse;
+
+uniform vec2 resolution;
+varying vec2 vUv;
+uniform float opacity;
+
+#ifdef USE_COLOR
+varying vec4 vColor;
+#endif
+void main(){
+  vec4 c1,c2;
+  vec2 p = gl_FragCoord.xy / resolution;
+  
+  c1 = texture2D(tDiffuse, p);
+  c2 = texture2D(map, vUv);
+  c2 = mapTexelToLinear( c2 );
+  c2.a = opacity;
+  gl_FragColor = c2;
+  
+  // if(length(c2.xyz) > 0.0 ) 
+  // {
+  //   gl_FragColor = clamp(c2 + c1,0.0,1.0);
+  // } else {
+  //   if(length(c1.xyz) > 0.0){
+  //     gl_FragColor = vec4(0.25 - c1.rgb * 0.25,c1.a);
+  //   } else {
+  //     discard;
+  //   }
+  //       //gl_FragColor = c1 * 0.2;
+  // }  
+}
+`;
+
+//const fs = THREE.ShaderLib.basic.fragmentShader;
+
 class SFRydeenPass extends THREE.Pass {
   constructor(width, height, fps, endTime, sampleRate = 48000) {
     super();
+
+    this.width = width;
+    this.height = height;
     this.time = 0;
     this.needSwap = false;
     this.clear = true;
@@ -1755,22 +1995,35 @@ class SFRydeenPass extends THREE.Pass {
     ffttexture.needsUpdate = true;
     ffttexture2.needsUpdate = true;
 
-    var fftgeometry = new THREE.PlaneBufferGeometry(8192, 8192, 32, 32);
+    var fftgeometry = new THREE.PlaneBufferGeometry(8192, 8192, 1, 1);
     this.fftgeometry = fftgeometry;
 
-    var fftmaterial = new THREE.MeshBasicMaterial({ map: ffttexture2, transparent: true, overdraw: true, opacity: 1.0, side: THREE.DoubleSide });
-    this.fftmaterial = this.fftmaterial;
+    const fftmaterial = this.fftmaterial = new THREE.ShaderMaterial({
+      vertexShader: vs,
+      fragmentShader: fs,
+      uniforms: {
+        map: { value : ffttexture2} ,
+        tDiffuse: { value: new THREE.Texture() },
+        resolution: { value: new THREE.Vector2() },
+        uvTransform: {value: new THREE.Matrix3()},
+        opacity: {value:1.0}
+      },
+      side: THREE.DoubleSide,transparent:true,overdraw:true
+    });
+
+   //const fftmaterial = new THREE.MeshBasicMaterial({ map: ffttexture2, transparent: true, overdraw: true, opacity: 1.0, side: THREE.DoubleSide });
+    this.fftmaterial = fftmaterial;
 
     var fftmesh = new THREE.Mesh(fftgeometry, fftmaterial);
     this.fftmesh = fftmesh;
 
     ffttexture2.wrapS = THREE.RepeatWrapping;
     ffttexture2.wrapT = THREE.RepeatWrapping;
-    ffttexture2.repeat.set(6, 1);
+    ffttexture2.repeat.set(8, 8);
 
     ffttexture.wrapS = THREE.RepeatWrapping;
     ffttexture.wrapT = THREE.RepeatWrapping;
-    ffttexture.repeat.set(1, 1);
+    ffttexture.repeat.set(1, 16);
 
     fftmesh.position.z = 0.0;
     fftmesh.rotation.x = Math.PI / 2;
@@ -1782,17 +2035,33 @@ class SFRydeenPass extends THREE.Pass {
     scene.add(fftmesh);
     scene.add(fftmesh2);
 
-    var wgeometry = new THREE.CylinderGeometry(512, 512, 32768, 32, 32, true);
+    var wgeometry = new THREE.ConeBufferGeometry(1024, 1024, 32, 32, true);
     wgeometry.rotateY(Math.PI / 2);
     this.wgeometry = wgeometry;
 
-    var wmesh = new THREE.Mesh(wgeometry, new THREE.MeshBasicMaterial({ map: ffttexture, transparent: true, side: THREE.DoubleSide }));
+    const fftmaterial2 = this.fftmaterial2 = new THREE.ShaderMaterial({
+      vertexShader: vs,
+      fragmentShader: fs,
+      uniforms: {
+        map: { type: 't', value: ffttexture },
+        tDiffuse: { type: 't', value: null },
+        resolution: { type: 'v2', value: new THREE.Vector2() },
+        uvTransform: {value: new THREE.Matrix3()},
+        opacity: {value:1.0}
+       },
+      side: THREE.DoubleSide,
+      transparent: true
+    });
+
+//    var wmesh = new THREE.Mesh(wgeometry, new THREE.MeshBasicMaterial({ map: ffttexture, transparent: true, side: THREE.DoubleSide }));
+    var wmesh = new THREE.Mesh(wgeometry, fftmaterial2);
     wmesh.position.x = 0;
     wmesh.position.y = 0;
     wmesh.rotation.y = Math.PI / 2;
     wmesh.rotation.z = Math.PI / 2;
-    wmesh.position.z = 0;
+    wmesh.position.z = 450.0;
     this.wmesh = wmesh;
+    wmesh.needsUpdate = true;
 
     scene.add(wmesh);
     camera.position.z = 1000;
@@ -1806,34 +2075,43 @@ class SFRydeenPass extends THREE.Pass {
 
     // 馬メッシュのロード
 
-    this.init = (() => {
-      return new Promise((resolve, reject) => {
+    this.init = (async () => {
+      await new Promise((resolve, reject) => {
         const loader = new THREE.GLTFLoader();
         loader.load( "./horse.glb", function( gltf ) {
           meshes[0] = gltf.scene.children[ 0 ];
           meshes[0].scale.set( 1.5, 1.5, 1.5 );
           meshes[0].rotation.y = 0.5 * Math.PI;
           meshes[0].position.y = 0;
+          meshes[0].material.transparent = true;
+          meshes[0].material.opacity = 0.001;
+          meshes[0].material.needsUpdate = true;
 
+    //       meshes[0].material =  new THREE.MeshBasicMaterial( {
+    //          vertexColors: THREE.FaceColors,
+    //           // shading: THREE.SmoothShading,
+    //           //transparent:true,
+    //           //map:ffttexture,
+    //         // side:THREE.DoubleSide,
+    // //            morphNormals: true,
+    //             //color: 0xffffff,
+    //             morphTargets: true,
+    //             transparent: true,
+    //             opacity:0.001,
+    //             //color:new THREE.Color(1.0,0.5,0.0)
+  
+    //             morphNormals: true,
+    //             //shading: THREE.SmoothShading//,
+    //             //morphTargets: true
+    //           } );;
+  
           for (let i = 1; i < HORSE_NUM; ++i) {
             meshes[i] = meshes[0].clone();
-            meshes[i].material =  new THREE.MeshPhongMaterial( {
-          // vertexColors: THREE.FaceColors,
-            // shading: THREE.SmoothShading,
-            //transparent:true,
-            //map:ffttexture,
-          // side:THREE.DoubleSide,
-  //            morphNormals: true,
-              // color: 0xffffff,
-              morphTargets: true,
-              transparent: true,
-              opacity:0.5,
-              color:new THREE.Color(1.0,0.5,0.0)
+            meshes[i].material.transparent = true;
+            meshes[i].material.opacity = 0.001;
+            meshes[i].material.needsUpdate = true;
 
-              //morphNormals: true,
-              //shading: THREE.SmoothShading//,
-              //morphTargets: true
-            } );            meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 10)) * 450;
+            meshes[i].position.x = (Math.floor((Math.random() - 0.5) * 10)) * 450;
             meshes[i].position.z = (Math.floor((Math.random() - 0.5) * 10)) * 150;
             meshes[i].position.y = 0/*(Math.random() - 0.6) * 1000*/;
           }
@@ -1931,6 +2209,7 @@ class SFRydeenPass extends THREE.Pass {
         //   resolve();
         //});
       });
+
     })();
 
 
@@ -2014,12 +2293,13 @@ class SFRydeenPass extends THREE.Pass {
 
   // 馬のフェードイン・フェードアウト
   horseFadein() {
-    let fadein = new Tween.Tween({ opacity: 0 });
+    let fadein = new Tween.Tween({ opacity: 0.001 });
     let self = this;
     fadein.to({ opacity: 1.0 }, 5000);
     fadein.onUpdate(function () {
       self.meshes.forEach((d) => {
         d.material.opacity = this.opacity;
+        d.material.needsUpdate = true;
       });
     });
     fadein.onStart(() => {
@@ -2031,10 +2311,11 @@ class SFRydeenPass extends THREE.Pass {
   horseFadeout() {
     let fadeout = new Tween.Tween({ opacity: 1.0 });
     let self = this;
-    fadeout.to({ opacity: 0.0 }, 3000);
+    fadeout.to({ opacity: 0.001 }, 3000);
     fadeout.onUpdate(function () {
       self.meshes.forEach((d) => {
         d.material.opacity = this.opacity;
+        d.material.needsUpdate = true;
       });
     });
     fadeout.onComplete(() => {
@@ -2050,12 +2331,7 @@ class SFRydeenPass extends THREE.Pass {
     rotateCilynder
       .to({ time: self.endTime }, 1000 * self.endTime)
       .onUpdate(()=> {
-        //camera.position.x = radius * Math.sin( theta );
-        //camera.rotation.z += 0.1;//radius * Math.cos( theta );
-        //wmesh.rotation.x += 0.01;
-        //wmesh.geometry.rotateY(0.05 * frameDelta);
-        //theta += 0.01 * frameDelta;
-        //ry += 0.001 * frameDelta;
+        //this.wmesh.geometry.rotateY(0.05 * this.frameDelta);
         this.camera.lookAt(this.camera.target);
       });
     return rotateCilynder;
@@ -2132,7 +2408,7 @@ class SFRydeenPass extends THREE.Pass {
     return cameraTween4;
   }
 
-  update(time) {
+  update(time,fft=true) {
     // ctx.fillStyle = 'rgba(0,0,0,0.2)';
     // //ctx.fillRect(0,0,TEXW,TEXH);
     this.time = time;
@@ -2144,81 +2420,99 @@ class SFRydeenPass extends THREE.Pass {
     let waveCount = ~~(time * this.sampleRate);
     let frameNo = ~~(time * this.fps);
     let wsize = 1024;
-    for (let i = 0; i < wsize; ++i) {
-      let r = 0, l = 0;
-      if ((waveCount + i) < (this.chR.length)) {
-        r = this.chR[waveCount + i];
-        l = this.chL[waveCount + i];
+    if(fft){
+      for (let i = 0; i < wsize; ++i) {
+        let r = 0, l = 0;
+        if ((waveCount + i) < (this.chR.length)) {
+          r = this.chR[waveCount + i];
+          l = this.chL[waveCount + i];
+        }
+  
+        let hsll = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
+        let hslr = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
+  
+  
+        // if(pat){
+        //   r = (r != 0 ? (r > 0 ? 1 : -1) : 0 ); 
+        //   l = (l != 0 ? (l > 0 ? 1 : -1) : 0 ) ; 
+        // }
+        ctx.fillStyle = hsll;
+        // if (r > 0) {
+        //   //ctx.fillRect(TEXW / 4 * 3 - r * TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, r * TEXW / 4, TEXH / wsize);
+        //   //ctx.fillRect(TEXW / 4 * 3 - TEXW / wsize / 2, i * TEXH / wsize, TEXW / 4, TEXH / wsize);
+        //   //ctx.fillRect(TEXW / 4 * 3 - TEXW / wsize / 2, i * TEXH / wsize, TEXW / 4, TEXH / wsize);
+        // } else {
+        //   //ctx.fillRect(TEXW / 4 * 3 - TEXW / wsize / 2, i * TEXH / wsize, -r * TEXW / 4, TEXH / wsize);
+        //   ctx.fillRect(TEXW / 4 * 3 - TEXW / wsize / 2, i * TEXH / wsize, -TEXW / 4, TEXH / wsize);
+        // }
+
+        if(r > 0.001){
+          ctx.fillRect(TEXW / 2, i * TEXH / wsize, TEXW / 2, TEXH / wsize);
+        }
+        
+
+  
+        ctx.fillStyle = hslr;
+        // if (l > 0) {
+        //   //ctx.fillRect(TEXW / 4  - l * TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, l * TEXW / 4, TEXH / wsize);
+        //   ctx.fillRect(TEXW / 4  - TEXW / wsize / 2, i * TEXH / wsize, TEXW / 4, TEXH / wsize);          
+        // } else {
+        //   // ctx.fillRect(TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, -l * TEXW / 4, TEXH / wsize);
+        //   ctx.fillRect(TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, -TEXW / 4, TEXH / wsize);
+        // }
+        if(l > 0.001){
+          ctx.fillRect(0, i * TEXH / wsize, TEXW / 2, TEXH / wsize);
+        }
       }
+  
+      this.fftmesh.position.x -= this.fftmeshSpeed;
+  
+      if (this.fftmesh.position.x < -4096)
+        this.fftmesh.position.x = 0;
+  
+      this.fftmesh2.position.x -= this.fftmeshSpeed;
+  
+      if (this.fftmesh2.position.x < 0)
+        this.fftmesh2.position.x = 8192;
+  
 
-      let hsll = 'hsl(' + Math.floor(Math.abs(r) * 200 + 250) + ',100%,50%)';
-      let hslr = 'hsl(' + Math.floor(Math.abs(l) * 200 + 250) + ',100%,50%)';
-
-
-      // if(pat){
-      //   r = (r != 0 ? (r > 0 ? 1 : -1) : 0 ); 
-      //   l = (l != 0 ? (l > 0 ? 1 : -1) : 0 ) ; 
+      // fft.forward(chR.subarray(waveCount,waveCount + fftsize));
+      // var pw = TEXH / (fftsize/2); 
+      // var spectrum = fft.real;
+      // for(var x = 0,e = fftsize/2 ;x < e;++x){
+      //   let db = -30 + Math.log10(Math.abs(spectrum[x])) * 10;
+      //   let h = (120 + db) * TEXH / 240;
+      //   let hsl = 'hsl(' + Math.floor((120 + db) / 120 * 150 + 260) + ',100%,50%)';
+      //   ctx.fillStyle = hsl;
+      //   ctx.fillRect(x * pw,TEXH/2 - h,pw,h);
       // }
-      ctx.fillStyle = hsll;
-      if (r > 0) {
-        ctx.fillRect(TEXW / 4 - r * TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, r * TEXW / 4, TEXH / wsize);
-      } else {
-        ctx.fillRect(TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, -r * TEXW / 4, TEXH / wsize);
-      }
+      // fft.forward(chL.subarray(waveCount,waveCount + fftsize));
+      // spectrum = fft.real;
+      // for(var x = 0,e = fftsize/2 ;x < e;++x){
+      //   let db = -30 + Math.log10(Math.abs(spectrum[x])) * 10;
+      //   let h = (120 + db) * TEXH / 240;
+      //   let hsl = 'hsl(' + Math.floor((120 + db) / 120 * 150 + 260) + ',100%,50%)';
+      //   ctx.fillStyle = hsl;
+      //   ctx.fillRect(x * pw,TEXH / 2,pw,h);
+      // }
+  
+      // {
+      //   let idx = parseInt(index,10);
+      //   for (var i = 0, end = horseGroups.length; i < end; ++i) {
+      //     var g = horseGroups[i];
+      //     g.getObjectByName('horse' + ('00' + idx.toString(10)).slice(-2)).visible = true;
+      //     if (idx == 0) {
+      //       g.getObjectByName('horse10').visible = false;
+      //     } else {
+      //       g.getObjectByName('horse' + ('00' + (idx - 1).toString(10)).slice(-2)).visible = false;
+      //     }
+      //   } 
+      // }
+  
+      this.ffttexture.needsUpdate = true;
+      this.ffttexture2.needsUpdate = true;      
 
-      ctx.fillStyle = hslr;
-      if (l > 0) {
-        ctx.fillRect(TEXW / 4 * 3 - l * TEXW / 4 - TEXW / wsize / 2, i * TEXH / wsize, l * TEXW / 4, TEXH / wsize);
-      } else {
-        ctx.fillRect(TEXW / 4 * 3 - TEXW / wsize / 2, i * TEXH / wsize, -l * TEXW / 4, TEXH / wsize);
-      }
     }
-
-    this.fftmesh.position.x -= this.fftmeshSpeed;
-
-    if (this.fftmesh.position.x < -4096)
-      this.fftmesh.position.x = 0;
-
-    this.fftmesh2.position.x -= this.fftmeshSpeed;
-
-    if (this.fftmesh2.position.x < 0)
-      this.fftmesh2.position.x = 8192;
-
-    // fft.forward(chR.subarray(waveCount,waveCount + fftsize));
-    // var pw = TEXH / (fftsize/2); 
-    // var spectrum = fft.real;
-    // for(var x = 0,e = fftsize/2 ;x < e;++x){
-    //   let db = -30 + Math.log10(Math.abs(spectrum[x])) * 10;
-    //   let h = (120 + db) * TEXH / 240;
-    //   let hsl = 'hsl(' + Math.floor((120 + db) / 120 * 150 + 260) + ',100%,50%)';
-    //   ctx.fillStyle = hsl;
-    //   ctx.fillRect(x * pw,TEXH/2 - h,pw,h);
-    // }
-    // fft.forward(chL.subarray(waveCount,waveCount + fftsize));
-    // spectrum = fft.real;
-    // for(var x = 0,e = fftsize/2 ;x < e;++x){
-    //   let db = -30 + Math.log10(Math.abs(spectrum[x])) * 10;
-    //   let h = (120 + db) * TEXH / 240;
-    //   let hsl = 'hsl(' + Math.floor((120 + db) / 120 * 150 + 260) + ',100%,50%)';
-    //   ctx.fillStyle = hsl;
-    //   ctx.fillRect(x * pw,TEXH / 2,pw,h);
-    // }
-
-    // {
-    //   let idx = parseInt(index,10);
-    //   for (var i = 0, end = horseGroups.length; i < end; ++i) {
-    //     var g = horseGroups[i];
-    //     g.getObjectByName('horse' + ('00' + idx.toString(10)).slice(-2)).visible = true;
-    //     if (idx == 0) {
-    //       g.getObjectByName('horse10').visible = false;
-    //     } else {
-    //       g.getObjectByName('horse' + ('00' + (idx - 1).toString(10)).slice(-2)).visible = false;
-    //     }
-    //   } 
-    // }
-
-    this.ffttexture.needsUpdate = true;
-    this.ffttexture2.needsUpdate = true;
 
     this.camera.lookAt(this.camera.target);
 
@@ -2227,21 +2521,31 @@ class SFRydeenPass extends THREE.Pass {
       this.mixers.forEach((mixer) => {
         mixer.update(1 / this.fps * 2);
       });
-
   }
 
 
   render(renderer, writeBuffer, readBuffer, delta, maskActive) {
+		this.fftmaterial.uniforms[ "tDiffuse" ].value = readBuffer.texture;
+		this.fftmaterial2.uniforms[ "tDiffuse" ].value = readBuffer.texture;
+		this.fftmaterial.uniforms[ "resolution" ].value.x = this.width;
+		this.fftmaterial2.uniforms[ "resolution" ].value.x = this.width;
+		this.fftmaterial.uniforms[ "resolution" ].value.y = this.height;
+    this.fftmaterial2.uniforms[ "resolution" ].value.y = this.height;
+    //this.fftmaterial.uniforms["opacity"].value = this.fftmaterial.opacity;
+    //this.fftmaterial2.uniforms["opacity"].value = this.fftmaterial2.opacity;
+    this.fftmaterial2.uniforms.map.value.updateMatrix();
+    this.fftmaterial.uniforms.map.value.updateMatrix();
+    this.fftmaterial2.uniforms.uvTransform.value = this.fftmaterial2.uniforms.map.value.matrix;
+    this.fftmaterial.uniforms.uvTransform.value =  this.fftmaterial.uniforms.map.value.matrix;
 
     if (this.renderToScreen) {
-
       renderer.render(this.scene, this.camera);
 
     } else {
 
 			let backup = renderer.getRenderTarget();
 			renderer.setRenderTarget(writeBuffer);
-			renderer.clear();
+			this.clear &&  renderer.clear();
       renderer.render(this.scene, this.camera);
 			renderer.setRenderTarget(backup);
 
@@ -3259,12 +3563,16 @@ class GlitchPass extends THREE.Pass {
 
 //
 
-var readFile = denodeify(fs.readFile);
+var readFile = denodeify(fs$1.readFile);
 
 class Audio {
-  load() {
-    var context = new AudioContext();
-
+  constructor(sampleRate){
+    this.sampleRate = sampleRate;
+    this.context = new AudioContext({sampleRate:sampleRate});
+  }
+  load(filename) {
+    const context = this.context;
+    
     function toArrayBuffer(buffer) {
       var ab = new ArrayBuffer(buffer.length);
       var view = new Uint8Array(ab);
@@ -3273,8 +3581,7 @@ class Audio {
       }
       return ab;
     }
-    let self = this;
-   return  readFile('./media/Rydeen.wav')
+   return  readFile(filename)
     .then(function(data){
       return new Promise((resolve,reject)=>{
         var arrayBuf = toArrayBuffer(data);
@@ -3283,13 +3590,13 @@ class Audio {
             console.log('error');
           }
           let source = context.createBufferSource();
-          self.source = source;
+          //self.source = source;
           source.buffer = buffer;
           source.connect(context.destination);
           let analyser = context.createAnalyser();
-          self.analyser = analyser;
+          //self.analyser = analyser;
           source.connect(analyser);
-          self.context = context;
+          //self.context = context;
           resolve(source);
         },function(err){
           reject(err);
@@ -3300,8 +3607,8 @@ class Audio {
 }
 
 //The MIT License (MIT)
-const readFile$1 = denodeify(fs.readFile);
-const writeFile = denodeify(fs.writeFile); 
+const readFile$1 = denodeify(fs$1.readFile);
+const writeFile = denodeify(fs$1.writeFile); 
 
 const SAMPLE_RATE = 96000;
 
@@ -3310,13 +3617,12 @@ function saveImage(buffer,path,width,height)
   return new Promise((resolve,reject)=>{
     sharp(buffer,{raw:{width:width,height:height,channels:4}})
     .flip()
-    .webp({lossless:true})
+    //.webp({lossless:true})
     .toFile(path,(err)=>{
       if(err) reject(err);
       resolve();      
     });
   });
-
 }
 
 var time;
@@ -3327,12 +3633,13 @@ window.addEventListener('load', async ()=>{
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == false;
   const fps = parseFloat(params.framerate);
+  console.log('framerate:',fps);
   const WIDTH = 1920 , HEIGHT = 1080;
-  //const canvas = document.createElement('canvas');
-  //const context = canvas.getContext('webgl2');
-  var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
-  //var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
-  var audioAnalyser = new Audio();
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
+  var audioAnalyser = new Audio(SAMPLE_RATE);
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
   renderer.domElement.id = 'console';
@@ -3354,21 +3661,23 @@ window.addEventListener('load', async ()=>{
   // Post Effect
 
   let composer = new THREE.EffectComposer(renderer);
+  composer.setSize(WIDTH, HEIGHT);
 
 
   //let renderPass = new THREE.RenderPass(scene, camera);
-//   var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-// //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
-//   animMain.renderToScreen = false;
-//   animMain.enabled = true;
-//   composer.setSize(WIDTH, HEIGHT);
-//   composer.addPass(animMain);
+  // var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+  var animMain = new SFShaderPass2(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+//  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
+  animMain.renderToScreen = false;
+  animMain.enabled = true;
+  await animMain.init;
 
-  let horseAnim = new HorseAnim(WIDTH,HEIGHT);
-  await horseAnim.resLoading;
-  horseAnim.enabled = true;
-  horseAnim.renderToScreen = false;
-  composer.addPass(horseAnim);
+  // let horseAnim = new HorseAnim(WIDTH,HEIGHT);
+  // await horseAnim.resLoading;
+  // horseAnim.enabled = true;
+  // horseAnim.renderToScreen = false;
+  // composer.addPass(horseAnim);
+  composer.addPass(animMain);
 
 
   // let gpuPass = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
@@ -3390,15 +3699,15 @@ window.addEventListener('load', async ()=>{
   let dotScreen = new THREE.ShaderPass(THREE.DotScreenShader);
   dotScreen.uniforms['scale'].value = 4;
   dotScreen.enabled = false;
-  dotScreen.renderToScreen = false;
+  dotScreen.renderToScreen = preview;
 
   composer.addPass(dotScreen);
 
-  let sf8Pass = new SF8Pass();
-//  rgbShift.uniforms['amount'].value = 0.0035;
-  sf8Pass.enabled = true;
-  sf8Pass.renderToScreen = preview;
-  composer.addPass(sf8Pass);
+//   let sf8Pass = new SF8Pass();
+// //  rgbShift.uniforms['amount'].value = 0.0035;
+//   sf8Pass.enabled = true;
+//   sf8Pass.renderToScreen = preview;
+//   composer.addPass(sf8Pass);
 
   // let rgbShift = new THREE.SF8Pass(THREE.RGBShiftShader);
   // rgbShift.uniforms['amount'].value = 0.0035;
@@ -3463,14 +3772,15 @@ window.addEventListener('load', async ()=>{
   // テクスチャのアップデート
   const START_OFFSET = 1678;
   var events = [
-    // // 馬のフェードイン・フェードアウト
+    // 馬のフェードイン・フェードアウト
     // {time:60420 - START_OFFSET,func:animMain.horseFadein()},
     // {time:60240 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
     // {time:134266 - START_OFFSET,func:animMain.horseFadein()},
     // {time:134266 + 20140 - 3000 - START_OFFSET,func:animMain.horseFadeout()},
-    // // シリンダーの回転
-    // {time:0,func:start(animMain.rotateCilynder.bind(animMain))},
-    // // カメラワーク
+    // シリンダーの回転
+
+    //{time:0,func:start(animMain.rotateCilynder.bind(animMain))},
+    // カメラワーク
     // {time:20.140 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
     // {time:32.727 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
     // {time:46.993 * 1000 - START_OFFSET,func:start(animMain.cameraTween.bind(animMain))},
@@ -3672,6 +3982,7 @@ window.addEventListener('load', async ()=>{
   async function renderToFile(preview) {
 
     time += frameSpeed;
+    //console.log(endTime,time,chR.length,waveCount);
     if (time > endTime) {
       await Promise.all(writeFilePromises);
       window.close();
@@ -3685,8 +3996,11 @@ window.addEventListener('load', async ()=>{
       window.close();
     }
 
-    //animMain.update(time);
+    animMain.update(time);
+    //horseAnim.update();
+
     //gpuPass.update(time);
+    
     composer.render();
 
     // if(sfShaderPass.enabled && ((frameNo & 3) == 0)){
@@ -3710,7 +4024,7 @@ window.addEventListener('load', async ()=>{
       // var data = d3.select('#console').node().toDataURL('image/jpeg');
       // var img  = nativeImage.createFromDataURL(data);
       // writeFilePromises.push(writeFile('./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpeg',img.toJPEG(80),'binary'));
-      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.webp',WIDTH,HEIGHT));
+      writeFilePromises.push(saveImage(new Buffer(sfCapturePass.buffers[sfCapturePass.currentIndex].buffer),'./temp/out' + ('000000' + frameNo.toString(10)).slice(-6) + '.jpg',WIDTH,HEIGHT));
       await Promise.all(writeFilePromises);
       writeFilePromises.length = 0;
       await renderToFile(preview);
@@ -3735,12 +4049,30 @@ window.addEventListener('load', async ()=>{
   //  }
   //  renderer.render(scene, camera);
   //};
-  //await Promise.all([animMain.init,gpuPass.init]);
-  await audioAnalyser.load();
-  chL = audioAnalyser.source.buffer.getChannelData(0);
-  chR = audioAnalyser.source.buffer.getChannelData(1);
-  //animMain.chL = chL;
-  //animMain.chR = chR;
+  await animMain.init;
+  //await Promise.all([animMain.init/*,gpuPass.init*/]);
+  let files = [
+    {path:'./media/separate/RS010.wav',amp:3.0},
+    {path:'./media/separate/RS009.wav',amp:4.0},
+    {path:'./media/separate/RS008.wav',amp:2.0},
+    {path:'./media/separate/RS007.wav',amp:4.0},
+    {path:'./media/separate/RS006.wav',amp:4.0},
+    {path:'./media/separate/RS005.wav',amp:4.5}, 
+    {path:'./media/separate/RS004.wav',amp:4.5},
+    {path:'./media/separate/RS003.wav',amp:2.0},
+    {path:'./media/separate/RS002.wav',amp:2.0},
+    {path:'./media/separate/RS001.wav',amp:1.3},
+    {path:'./media/separate/RS.wav',amp:1.0}
+  ];
+
+  for(const file of files ){
+    let source = await audioAnalyser.load(file.path);
+    chL = source.buffer.getChannelData(0);
+    chR = source.buffer.getChannelData(1);
+    animMain.chL.push(chL);
+    animMain.amp.push(file.amp);
+    animMain.chR.push(chR);
+  }
   await renderToFile(preview);
 
 });

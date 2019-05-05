@@ -7,7 +7,7 @@ set ver=85
 set output=rydeen.mp4
 set play=0
 
-rem 引数チェック
+rem パラメータチェック
 :check
 if "%1"=="" goto end-check
 
@@ -27,7 +27,7 @@ if "%1"=="/fps" (
   if Not "%2"=="" (
     set fps=%2
   ) else (
-    @echo 引数が不足しています。%1
+    @echo パラメータエラー
     exit /b 1
   )
   shift
@@ -39,7 +39,7 @@ if "%1"=="/ver" (
   if Not "%2"=="" (
     set ver=%2
   ) else (
-    @echo 引数が不足しています。%1
+    @echo パラメータエラー
     exit /b 1
   )
   shift
@@ -51,7 +51,7 @@ if "%1"=="/output" (
   if Not "%2"=="" (
     set output=%2
   ) else (
-    @echo 引数が不足しています。%1
+    @echo パラメータエラー
     exit /b 1
   )
   shift
@@ -59,30 +59,28 @@ if "%1"=="/output" (
   goto check
 )
 
-@echo 引数に誤りがあります。%1
+@echo パラメータエラー
 exit /b 1
 :end-check
 
-rem スクリプトのビルド
 call rollup -c .\rollup.config.js
 
-rem アニメーション用ビットマップ生成
 if !generate! == 1 (
   del /q temp\*.*
   call electron . -framerate !fps! 
 ) 
 
-rem 動画エンコーディング
 
 rem ffmpeg  -framerate !fps! -i ./temp/out%%06d.webp -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 768k -r:a 96000 -preset lossless -movflags faststart ./media/!output! -y
 
-ffmpeg  -framerate !fps! -i ./temp/out%%06d.webp -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -preset lossless -b:a 1536k -r:a 96000 -movflags faststart ./media/!output! -y
+rem ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -preset losslesshp -b:a 6000k -r:a 96000 -movflags faststart ./media/!output! -y
+
+rem ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -preset losslesshp -c:a copy -movflags faststart ./media/!output! -y
 
 
-rem ffmpeg  -framerate !fps! -i ./temp/out%%06d.webp -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 768k -r:a 96000 -b:v 60M -minrate 60M -maxrate 60M -qmin 1 -qmax 20 -movflags faststart ./media/!output! -y
+ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 6000k -r:a 96000 -b:v 30M -minrate 30M -maxrate 30M -qmin 1 -qmax 20 -movflags faststart ./media/!output! -y
 
 
-rem 再生
 if !play!==1 (
   ffplay media\!output!
 )
