@@ -1486,7 +1486,7 @@ void main()	{
 
   // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
   vec2 uv = gl_FragCoord.xy / resolution.xy;
-  float v = texture2D(tDiffuse, uv).r;
+  float v = texture2D(tDiffuse, vUv).r;
   if(abs(v - 0.5) < 0.002 ) discard;
   //v = clamp((v - 0.5) * 4.0 + 0.5,0.0,1.0) / (CHANNEL * 2.0);
   v /= (CHANNEL * 2.0);
@@ -3581,10 +3581,12 @@ class Audio {
       }
       return ab;
     }
+    let self = this;
    return  readFile(filename)
     .then(function(data){
       return new Promise((resolve,reject)=>{
         var arrayBuf = toArrayBuffer(data);
+        self.decodeAudio(arrayBuf);
         context.decodeAudioData(arrayBuf,function(buffer){
           if(!buffer){
             console.log('error');
@@ -3604,6 +3606,58 @@ class Audio {
       });
     });
   }
+
+  // WAVファイルを解析し、バイト配列として読み込む
+  decodeAudio(buffer){
+//    const buffer = await fs.readFile(filename);
+    const view = new DataView(buffer);
+    const result = {};
+
+    result.chunkId = this.getFORCC(view,0);
+
+    result.chunkSize = view.getUint32(4,true);
+
+    result.format = this.getFORCC(view,8);
+
+    result.subChunkId = this.getFORCC(view,12);
+    
+    result.subChunkSize = view.getUint32(16,true);
+
+    result.audioFormat = view.getUint16(20,true);
+    result.channels = view.getUint16(22,true);
+    result.samplesPerSec = view.getUint32(24,true);
+    result.avgBytesPerSec = view.getUint32(28,true);
+    result.blockAlign = view.getUint16(32,true);
+    result.bitsPerSample = view.getUint16(34,true);
+
+    let offset = 36;
+
+    if(result.subChunkSize > 36){
+      result.sizeOfExtension = view.getUint16(36,true);
+      result.validBitsPerSample = view.getUint16(38,true);
+      result.channelMask = view.getUint16(40,true);
+      result.subFormat = view.buffer.slice(42,42+16);
+      offset = 36 + result.sizeOfExtension + 2;
+    }
+
+    result.dataId = this.getFORCC(view,offset);
+
+    console.log(result);
+
+  }
+
+  getFORCC(view,offset){
+    let result = String.fromCharCode(view.getUint8(offset));
+    result += String.fromCharCode(view.getUint8(offset + 1));
+    result += String.fromCharCode(view.getUint8(offset + 2));
+    result += String.fromCharCode(view.getUint8(offset + 3));
+    return result;
+  }
+
+  
+
+
+
 }
 
 //The MIT License (MIT)
@@ -4052,14 +4106,14 @@ window.addEventListener('load', async ()=>{
   await animMain.init;
   //await Promise.all([animMain.init/*,gpuPass.init*/]);
   let files = [
-    {path:'./media/separate/RS010.wav',amp:3.0},
-    {path:'./media/separate/RS009.wav',amp:4.0},
-    {path:'./media/separate/RS008.wav',amp:2.0},
-    {path:'./media/separate/RS007.wav',amp:4.0},
-    {path:'./media/separate/RS006.wav',amp:4.0},
-    {path:'./media/separate/RS005.wav',amp:4.5}, 
-    {path:'./media/separate/RS004.wav',amp:4.5},
-    {path:'./media/separate/RS003.wav',amp:2.0},
+    {path:'./media/separate/RS010.wav',amp:2.0},
+    {path:'./media/separate/RS009.wav',amp:4.5},
+    {path:'./media/separate/RS008.wav',amp:4.0},
+    {path:'./media/separate/RS007.wav',amp:5.0},
+    {path:'./media/separate/RS006.wav',amp:5.0},
+    {path:'./media/separate/RS005.wav',amp:5.0}, 
+    {path:'./media/separate/RS004.wav',amp:5.0},
+    {path:'./media/separate/RS003.wav',amp:5.0},
     {path:'./media/separate/RS002.wav',amp:2.0},
     {path:'./media/separate/RS001.wav',amp:1.3},
     {path:'./media/separate/RS.wav',amp:1.0}

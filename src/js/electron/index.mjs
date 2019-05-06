@@ -526,14 +526,14 @@ window.addEventListener('load', async ()=>{
   await animMain.init;
   //await Promise.all([animMain.init/*,gpuPass.init*/]);
   let files = [
-    {path:'./media/separate/RS010.wav',amp:3.0},
-    {path:'./media/separate/RS009.wav',amp:4.0},
-    {path:'./media/separate/RS008.wav',amp:2.0},
-    {path:'./media/separate/RS007.wav',amp:4.0},
-    {path:'./media/separate/RS006.wav',amp:4.0},
-    {path:'./media/separate/RS005.wav',amp:4.5}, 
-    {path:'./media/separate/RS004.wav',amp:4.5},
-    {path:'./media/separate/RS003.wav',amp:2.0},
+    {path:'./media/separate/RS010.wav',amp:2.0},
+    {path:'./media/separate/RS009.wav',amp:4.5},
+    {path:'./media/separate/RS008.wav',amp:4.0},
+    {path:'./media/separate/RS007.wav',amp:5.0},
+    {path:'./media/separate/RS006.wav',amp:5.0},
+    {path:'./media/separate/RS005.wav',amp:5.0}, 
+    {path:'./media/separate/RS004.wav',amp:5.0},
+    {path:'./media/separate/RS003.wav',amp:5.0},
     {path:'./media/separate/RS002.wav',amp:2.0},
     {path:'./media/separate/RS001.wav',amp:1.3},
     {path:'./media/separate/RS.wav',amp:1.0}

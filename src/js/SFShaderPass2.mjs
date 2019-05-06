@@ -26,7 +26,7 @@ void main()	{
 
   // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
   vec2 uv = gl_FragCoord.xy / resolution.xy;
-  float v = texture2D(tDiffuse, uv).r;
+  float v = texture2D(tDiffuse, vUv).r;
   if(abs(v - 0.5) < 0.002 ) discard;
   //v = clamp((v - 0.5) * 4.0 + 0.5,0.0,1.0) / (CHANNEL * 2.0);
   v /= (CHANNEL * 2.0);
