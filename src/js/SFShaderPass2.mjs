@@ -4,8 +4,8 @@
 // Shader Sampleより拝借
 // https://github.com/mrdoob/three.js/blob/master/examples/webgl_shader.html
 "use strict";
-//import * as THREE from 'three';
-const CHANNEL = 11;
+ //import * as THREE from 'three';
+const CHANNEL = 10;
 const WAVE_WIDTH = 16384;
 
 let vertexShader =
@@ -53,8 +53,7 @@ export default class SFShaderPass2 extends THREE.Pass {
     this.width = width;
     this.height = height;
     this.time = 0;
-    this.chR = [];
-    this.chL = [];
+    this.waves = [];
     this.amp = [];
     this.fps = fps;
     this.endTime = endTime;
@@ -105,12 +104,12 @@ export default class SFShaderPass2 extends THREE.Pass {
     for (let i = 0; i < wsize; ++i) {
       for(let k = 0;k < CHANNEL;++k){
         let r = 0, l = 0;
-        if ((waveCount + i) < (this.chR[k].length)) {
-          r = this.chR[k][waveCount + i];
-          l = this.chL[k][waveCount + i];
+        if ((waveCount + i) < (this.waves[k].data[0].length)) {
+          r = this.waves[k].data[0][waveCount + i];
+          l = this.waves[k].data[1][waveCount + i];
         }
-        this.audioBuffer[i + k * 2 * wsize] = ((r * this.amp[k] + 1.0) / 2 * 0xff) | 0;
-        this.audioBuffer[i + (k * 2 + 1) * wsize] = ((l * this.amp[k] + 1.0) / 2 * 0xff) | 0;
+        this.audioBuffer[i + k * 2 * wsize] = r * this.amp[k] | 0;
+        this.audioBuffer[i + (k * 2 + 1) * wsize] = l * this.amp[k] | 0;
       }
     }
     //this.texture.set(this.audioBuffer);

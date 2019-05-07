@@ -5,6 +5,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var fs$1 = require('fs');
 require('electron');
 var sharp = _interopDefault(require('sharp'));
+require('url');
 
 function denodeify (nodeFunc){
     var baseArgs = Array.prototype.slice.call(arguments, 1);
@@ -1464,8 +1465,8 @@ class SFShaderPass extends THREE.Pass {
 /**
  * @author SFPGMR
  */
-//import * as THREE from 'three';
-const CHANNEL = 11;
+ //import * as THREE from 'three';
+const CHANNEL = 10;
 const WAVE_WIDTH = 16384;
 
 let vertexShader$1 =
@@ -1513,8 +1514,7 @@ class SFShaderPass2 extends THREE.Pass {
     this.width = width;
     this.height = height;
     this.time = 0;
-    this.chR = [];
-    this.chL = [];
+    this.waves = [];
     this.amp = [];
     this.fps = fps;
     this.endTime = endTime;
@@ -1565,12 +1565,12 @@ class SFShaderPass2 extends THREE.Pass {
     for (let i = 0; i < wsize; ++i) {
       for(let k = 0;k < CHANNEL;++k){
         let r = 0, l = 0;
-        if ((waveCount + i) < (this.chR[k].length)) {
-          r = this.chR[k][waveCount + i];
-          l = this.chL[k][waveCount + i];
+        if ((waveCount + i) < (this.waves[k].data[0].length)) {
+          r = this.waves[k].data[0][waveCount + i];
+          l = this.waves[k].data[1][waveCount + i];
         }
-        this.audioBuffer[i + k * 2 * wsize] = ((r * this.amp[k] + 1.0) / 2 * 0xff) | 0;
-        this.audioBuffer[i + (k * 2 + 1) * wsize] = ((l * this.amp[k] + 1.0) / 2 * 0xff) | 0;
+        this.audioBuffer[i + k * 2 * wsize] = r * this.amp[k] | 0;
+        this.audioBuffer[i + (k * 2 + 1) * wsize] = l * this.amp[k] | 0;
       }
     }
     //this.texture.set(this.audioBuffer);
@@ -3562,8 +3562,14 @@ class GlitchPass extends THREE.Pass {
 }
 
 //
+//var readFile = denodeify(fs.readFile);
 
-var readFile = denodeify(fs$1.readFile);
+const WAVE_FORMAT_PCM = 0x0001; // PCM
+const WAVE_FORMAT_IEEE_FLOAT = 0x0003;// IEEE float
+const WAVE_FORMAT_ALAW = 0x0006;// 8-bit ITU-T G.711 A-law
+const WAVE_FORMAT_MULAW = 0x0007;//		8-bit ITU-T G.711 µ-law
+const WAVE_FORMAT_EXTENSIBLE = 0xFFFE;//Determined by SubFormat
+
 
 class Audio {
   constructor(sampleRate){
@@ -3574,56 +3580,59 @@ class Audio {
     const context = this.context;
     
     function toArrayBuffer(buffer) {
-      var ab = new ArrayBuffer(buffer.length);
-      var view = new Uint8Array(ab);
-      for (var i = 0; i < buffer.length; ++i) {
-          view[i] = buffer.readUInt8(i);
-      }
-      return ab;
+      return new Uint8Array(buffer).buffer;
+      // var ab = new ArrayBuffer(buffer.length);
+      // var view = new Uint8Array(ab);
+      // for (var i = 0; i < buffer.length; ++i) {
+      //     view[i] = buffer.readUInt8(i);
+      // }
+      // return ab;
     }
     let self = this;
-   return  readFile(filename)
-    .then(function(data){
-      return new Promise((resolve,reject)=>{
+   return  fs$1.promises.readFile(filename)
+    .then((data)=>{
         var arrayBuf = toArrayBuffer(data);
-        self.decodeAudio(arrayBuf);
-        context.decodeAudioData(arrayBuf,function(buffer){
-          if(!buffer){
-            console.log('error');
-          }
-          let source = context.createBufferSource();
-          //self.source = source;
-          source.buffer = buffer;
-          source.connect(context.destination);
-          let analyser = context.createAnalyser();
-          //self.analyser = analyser;
-          source.connect(analyser);
-          //self.context = context;
-          resolve(source);
-        },function(err){
-          reject(err);
-        });
-      });
+        return self.decodeAudio(arrayBuf);
+        // context.decodeAudioData(arrayBuf,function(buffer){
+        //   if(!buffer){
+        //     console.log('error');
+        //   }
+        //   let source = context.createBufferSource();
+        //   //self.source = source;
+        //   source.buffer = buffer;
+        //   source.connect(context.destination);
+        //   let analyser = context.createAnalyser();
+        //   //self.analyser = analyser;
+        //   source.connect(analyser);
+        //   //self.context = context;
+        //   resolve(source);
+        // },function(err){
+        //   reject(err);
+        // });
     });
   }
 
+
+  
   // WAVファイルを解析し、バイト配列として読み込む
   decodeAudio(buffer){
-//    const buffer = await fs.readFile(filename);
+ 
+    //const buffer = await fs.promises.readFile(filename);
+    
+    
+  
     const view = new DataView(buffer);
     const result = {};
 
+    // RIFF
     result.chunkId = this.getFORCC(view,0);
-
     result.chunkSize = view.getUint32(4,true);
+    result.waveId = this.getFORCC(view,8);
 
-    result.format = this.getFORCC(view,8);
-
+    // fmt chunk
     result.subChunkId = this.getFORCC(view,12);
-    
     result.subChunkSize = view.getUint32(16,true);
-
-    result.audioFormat = view.getUint16(20,true);
+    result.formatTag = view.getUint16(20,true);
     result.channels = view.getUint16(22,true);
     result.samplesPerSec = view.getUint32(24,true);
     result.avgBytesPerSec = view.getUint32(28,true);
@@ -3632,18 +3641,101 @@ class Audio {
 
     let offset = 36;
 
-    if(result.subChunkSize > 36){
-      result.sizeOfExtension = view.getUint16(36,true);
-      result.validBitsPerSample = view.getUint16(38,true);
-      result.channelMask = view.getUint16(40,true);
-      result.subFormat = view.buffer.slice(42,42+16);
-      offset = 36 + result.sizeOfExtension + 2;
+    switch(result.subChunkSize){
+      case 16:
+        break;
+      case 18:
+        result.sizeOfExtension = view.getUint16(36,true);
+        offset += 22;
+        break;
+      case 40:
+        result.sizeOfExtension = view.getUint16(36,true);
+        result.validBitsPerSample = view.getUint16(38,true);
+        result.channelMask = view.getUint32(40,true);
+        result.subFormat = view.buffer.slice(44,44+16);
+        offset = 36 + result.sizeOfExtension + 2;
+        break;
+      
+      default:
+        throw new Error('size of subchunk is wrong.');
     }
 
-    result.dataId = this.getFORCC(view,offset);
+    // 格納する配列の型を求める
+    let ArrayType;
+    let dataGetter;
+    let byteSize;
+    let formatTag = result.formatTag;
+    if(result.formatTag == WAVE_FORMAT_EXTENSIBLE){
+      formatTag = view.getUint16(44,2);
+      result.subFormatTag = formatTag;
+    }
 
-    console.log(result);
+    
+    switch(formatTag){
+      case WAVE_FORMAT_PCM:
+        switch(result.bitsPerSample){
+          case 8:
+            ArrayType = Uint8Array;
+            dataGetter = view.getUint8.bind(view);
+            byteSize = 1;
+            break;
+          case 16:
+            ArrayType = Int16Array;
+            dataGetter = view.getInt16.bind(view);
+            byteSize = 2;
+            break;
+          case 32:
+            ArrayType = Int32Array;
+            dataGetter = view.getInt32.bind(view);
+            byteSize = 4;
+            break;
+          case 24:
+          default:
+          throw new Error(`${result.bitsPerSample} bit pcm is not supported.`);
+        }
+        break;
+      case WAVE_FORMAT_IEEE_FLOAT:
+        ArrayType = Float32Array;
+        dataGetter = view.getFloat32.bind(view);
+        byteSize = 4;
+        break;
+      case WAVE_FORMAT_EXTENSIBLE:
+        break;
+      case WAVE_FORMAT_ALAW:
+      case WAVE_FORMAT_MULAW:
+      default:
+        throw new Error(`formatTag(${result.formatTag}) is not supported.`);
+    }
 
+
+
+
+    while(true){
+      const forcc = this.getFORCC(view,offset);
+      if(forcc != "data"){
+        offset += 4;
+        const datasize = view.getUint32(offset,true);
+        offset += 4 + datasize;
+      } else {
+        offset += 4;
+        const datasize = view.getUint32(offset,true);
+        offset += 4;
+        const dataArray = [];
+        for(let i = 0;i < result.channels;++i){
+          dataArray[i] = new ArrayType(datasize / result.blockAlign);
+        }
+        for(let j = 0,je = datasize / result.blockAlign;j < je;++j){
+          for(let i = 0;i < result.channels;++i){
+            dataArray[i][j] = dataGetter(offset,true);
+            offset += byteSize;
+           }
+        }
+        result.data = dataArray;
+        break;
+      }
+    }
+    console.info(result);
+    return result;
   }
 
   getFORCC(view,offset){
@@ -3661,10 +3753,11 @@ class Audio {
 }
 
 //The MIT License (MIT)
-const readFile$1 = denodeify(fs$1.readFile);
+const readFile = denodeify(fs$1.readFile);
 const writeFile = denodeify(fs$1.writeFile); 
 
-const SAMPLE_RATE = 96000;
+const SAMPLE_RATE = 24000;
+let waveLength = 0;
 
 function saveImage(buffer,path,width,height)
 {
@@ -3708,8 +3801,6 @@ window.addEventListener('load', async ()=>{
   var frameNo = 0;
   var endTime = 60.0 * 4.0 + 30.0;
   var frameSpeed = 1.0 / fps; 
-  var chR;
-  var chL;
   var writeFilePromises = []; 
 
   // Post Effect
@@ -3792,34 +3883,6 @@ window.addEventListener('load', async ()=>{
       })
       .onComplete(()=>{
         glitchPass.goWild = false;
-      });
-  }
-
-  // 間奏
-  function intEffect(){
-    return  new Tween.Tween({})
-      .to({},25.175 * 1000)
-      .onUpdate(()=>{
-        dotScreen.uniforms['scale'].value = (chR[waveCount] + chL[waveCount]) * 8 + 1;
-      })
-      .onStart(()=>{
-        dotScreen.enabled = true;
-      })
-      .onComplete(()=>{
-        dotScreen.enabled = false;
-      });
-  }
-
-  function intEffect2(){
-    return  new Tween.Tween({})
-      .to({},80)
-      .onUpdate(()=>{
-      })
-      .onStart(()=>{
-        dotScreen.enabled = false;
-      })
-      .onComplete(()=>{
-        dotScreen.enabled = true;
       });
   }
 
@@ -4003,28 +4066,28 @@ window.addEventListener('load', async ()=>{
     {time:234.234 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
 
     // 間奏エフェクト
-    {time:154.406 * 1000 - START_OFFSET,func:start(intEffect)},
+    //{time:154.406 * 1000 - START_OFFSET,func:start(intEffect)},
     //{time:0,func:start(intEffect)}
 
   ];
   
   // 間奏エフェクト
-  {
-    let s = 161.119 * 1000 - START_OFFSET;
-    for(let i = 0;i < 11;++i){
-      let st = s + i * 420 * 4;
-      events = events.concat([
-        {time:st,func:start(intEffect2)},
-        {time:st + 210,func:start(intEffect2)},
-        {time:st + 420,func:start(intEffect2)},
-        {time:st + 735,func:start(intEffect2)},
-        {time:st + 945,func:start(intEffect2)},
-        {time:st + 1155,func:start(intEffect2)},
-        {time:st + 1260,func:start(intEffect2)},
-        {time:st + 1470,func:start(intEffect2)},
-      ]);
-    }
-  }
+  // {
+  //   let s = 161.119 * 1000 - START_OFFSET;
+  //   for(let i = 0;i < 11;++i){
+  //     let st = s + i * 420 * 4;
+  //     events = events.concat([
+  //       {time:st,func:start(intEffect2)},
+  //       {time:st + 210,func:start(intEffect2)},
+  //       {time:st + 420,func:start(intEffect2)},
+  //       {time:st + 735,func:start(intEffect2)},
+  //       {time:st + 945,func:start(intEffect2)},
+  //       {time:st + 1155,func:start(intEffect2)},
+  //       {time:st + 1260,func:start(intEffect2)},
+  //       {time:st + 1470,func:start(intEffect2)},
+  //     ]);
+  //   }
+  // }
 
 
   var timeline = new TimeLine(events); 
@@ -4045,7 +4108,7 @@ window.addEventListener('load', async ()=>{
     ++frameNo;
 
     waveCount += step;
-    if(waveCount >= chR.length){
+    if(waveCount >= waveLength){
       await Promise.all(writeFilePromises);
       window.close();
     }
@@ -4114,19 +4177,17 @@ window.addEventListener('load', async ()=>{
     {path:'./media/separate/RS005.wav',amp:5.0}, 
     {path:'./media/separate/RS004.wav',amp:5.0},
     {path:'./media/separate/RS003.wav',amp:5.0},
-    {path:'./media/separate/RS002.wav',amp:2.0},
-    {path:'./media/separate/RS001.wav',amp:1.3},
-    {path:'./media/separate/RS.wav',amp:1.0}
+    {path:'./media/separate/RS002.wav',amp:1.3},
+    {path:'./media/separate/RS001.wav',amp:4.0}
+//    {path:'./media/separate/RS.wav',amp:1.0}
   ];
 
   for(const file of files ){
     let source = await audioAnalyser.load(file.path);
-    chL = source.buffer.getChannelData(0);
-    chR = source.buffer.getChannelData(1);
-    animMain.chL.push(chL);
+    animMain.waves.push(source);
     animMain.amp.push(file.amp);
-    animMain.chR.push(chR);
   }
+  waveLength = animMain.waves[0].data[0].length;
   await renderToFile(preview);
 
 });

@@ -46,7 +46,8 @@ import GlitchPass from '../GlitchPass.mjs';
 //import DSP from '../dsp';
 import AudioAnalyser from '../AudioAnalyser.mjs';
 
-const SAMPLE_RATE = 96000;
+const SAMPLE_RATE = 24000;
+let waveLength = 0;
 
 function saveImage(buffer,path,width,height)
 {
@@ -415,28 +416,28 @@ window.addEventListener('load', async ()=>{
     {time:234.234 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
 
     // 間奏エフェクト
-    {time:154.406 * 1000 - START_OFFSET,func:start(intEffect)},
+    //{time:154.406 * 1000 - START_OFFSET,func:start(intEffect)},
     //{time:0,func:start(intEffect)}
 
   ];
   
   // 間奏エフェクト
-  {
-    let s = 161.119 * 1000 - START_OFFSET;
-    for(let i = 0;i < 11;++i){
-      let st = s + i * 420 * 4;
-      events = events.concat([
-        {time:st,func:start(intEffect2)},
-        {time:st + 210,func:start(intEffect2)},
-        {time:st + 420,func:start(intEffect2)},
-        {time:st + 735,func:start(intEffect2)},
-        {time:st + 945,func:start(intEffect2)},
-        {time:st + 1155,func:start(intEffect2)},
-        {time:st + 1260,func:start(intEffect2)},
-        {time:st + 1470,func:start(intEffect2)},
-      ]);
-    }
-  }
+  // {
+  //   let s = 161.119 * 1000 - START_OFFSET;
+  //   for(let i = 0;i < 11;++i){
+  //     let st = s + i * 420 * 4;
+  //     events = events.concat([
+  //       {time:st,func:start(intEffect2)},
+  //       {time:st + 210,func:start(intEffect2)},
+  //       {time:st + 420,func:start(intEffect2)},
+  //       {time:st + 735,func:start(intEffect2)},
+  //       {time:st + 945,func:start(intEffect2)},
+  //       {time:st + 1155,func:start(intEffect2)},
+  //       {time:st + 1260,func:start(intEffect2)},
+  //       {time:st + 1470,func:start(intEffect2)},
+  //     ]);
+  //   }
+  // }
 
 
   var timeline = new TimeLine(events); 
@@ -465,7 +466,7 @@ window.addEventListener('load', async ()=>{
     ++frameNo;
 
     waveCount += step;
-    if(waveCount >= chR.length){
+    if(waveCount >= waveLength){
       await Promise.all(writeFilePromises);
       window.close();
     }
@@ -534,19 +535,17 @@ window.addEventListener('load', async ()=>{
     {path:'./media/separate/RS005.wav',amp:5.0}, 
     {path:'./media/separate/RS004.wav',amp:5.0},
     {path:'./media/separate/RS003.wav',amp:5.0},
-    {path:'./media/separate/RS002.wav',amp:2.0},
-    {path:'./media/separate/RS001.wav',amp:1.3},
-    {path:'./media/separate/RS.wav',amp:1.0}
+    {path:'./media/separate/RS002.wav',amp:1.3},
+    {path:'./media/separate/RS001.wav',amp:4.0}
+//    {path:'./media/separate/RS.wav',amp:1.0}
   ];
 
   for(const file of files ){
     let source = await audioAnalyser.load(file.path);
-    chL = source.buffer.getChannelData(0);
-    chR = source.buffer.getChannelData(1);
-    animMain.chL.push(chL);
+    animMain.waves.push(source);
     animMain.amp.push(file.amp);
-    animMain.chR.push(chR);
   }
+  waveLength = animMain.waves[0].data[0].length;
   await renderToFile(preview);
 
 });
