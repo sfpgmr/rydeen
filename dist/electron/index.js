@@ -1466,37 +1466,39 @@ class SFShaderPass extends THREE.Pass {
  * @author SFPGMR
  */
  //import * as THREE from 'three';
-const CHANNEL = 10;
-const WAVE_WIDTH = 16384;
 
-let vertexShader$1 =
-  `
-varying vec2 vUv;
+ let vertexShader$1 =
+  `#version 300 es 
+out vec2 vUv;
 void main()	{
 		vUv = uv;
+    //gl_Position =  projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     gl_Position = vec4( position, 1.0 );
   }
 `;
 let fragmentShader$1 =
-  `
+  `#version 300 es
+precision highp float;
+precision highp int;
+
 uniform sampler2D tDiffuse;
 uniform vec2 resolution;
 uniform float time;
-varying vec2 vUv;
+uniform float amp[CHANNEL_INT];
+
+in vec2 vUv;
+out vec4 color;
+
 void main()	{
 
   // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
-  vec2 uv = gl_FragCoord.xy / resolution.xy;
+  float amplitude = amp[int(vUv.y * CHANNEL)];
   float v = texture2D(tDiffuse, vUv).r;
-  if(abs(v - 0.5) < 0.002 ) discard;
-  //v = clamp((v - 0.5) * 4.0 + 0.5,0.0,1.0) / (CHANNEL * 2.0);
-  v /= (CHANNEL * 2.0);
-  float y = floor(uv.y * CHANNEL * 2.0) / (CHANNEL * 2.0) + v;
-  //float c = step(abs(uv.y - y),0.0008);
-  float c = 1.0 - smoothstep(0.0005,0.001,abs(uv.y - y));
-  //float c = clamp(abs(uv.y - y),0.0,1.0);
-  
-  gl_FragColor = vec4(c,c,c,1.0);
+  if(abs(v - 0.5) < 0.003 ) discard;
+  v = clamp((v - 0.5) * amplitude + 0.5,0.0,1.0) / (CHANNEL * 2.0);
+  float y = floor(vUv.y * CHANNEL * 2.0) / (CHANNEL * 2.0) + v;
+  float c = 1.0 - smoothstep(0.0005,0.001,abs(vUv.y - y));
+  color = vec4(c,c,c,1.0);
 }
 `;
 
@@ -1508,44 +1510,49 @@ let uniforms$1 = {
 };
 
 class SFShaderPass2 extends THREE.Pass {
-  constructor(width, height, fps, endTime, sampleRate = 48000) {
+  constructor(width, height, fps, endTime, sampleRate = 48000,channel,wave_width,waves) {
     super();
-
+    this.channel = channel;
+    this.waveWidth = wave_width;
     this.width = width;
     this.height = height;
     this.time = 0;
-    this.waves = [];
-    this.amp = [];
     this.fps = fps;
     this.endTime = endTime;
     this.step = sampleRate / fps;
     this.sampleRate = sampleRate;
     this.frameDelta = 30 / fps;
+    this.waves = waves;
     //this.fftsize = 256;
     //this.fft = new FFT(this.fftsize, sampleRate);
     this.frameSpeed = 1.0 / fps;
     this.delta = this.frameSpeed;
     this.radius = 1000, this.theta = 0;
     this.fftmeshSpeed = 50 * this.frameDelta;
+    uniforms$1.amp = {value:new Array(channel)};
 
     this.uniforms = THREE.UniformsUtils.clone(uniforms$1);
     this.uniforms.resolution.value.x = width;
     this.uniforms.resolution.value.y = height;
+    for(let i = 0;i < channel;++i){
+      this.uniforms.amp.value[i] = this.waves[i].amp;
+    }
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader: vertexShader$1,
       fragmentShader: fragmentShader$1,
       defines: {
-        CHANNEL: CHANNEL + '.0'
+        CHANNEL: this.channel + '.0',
+        CHANNEL_INT: this.channel
       }
     });
 
     this.camera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
     this.scene = new THREE.Scene();
 
-    this.audioBuffer = new Uint8Array(WAVE_WIDTH * CHANNEL * 2);
+    this.audioBuffer = new Uint8Array(this.waveWidth * this.channel * 2);
 
-    this.texture = new THREE.DataTexture(this.audioBuffer, WAVE_WIDTH, CHANNEL * 2, THREE.LuminanceFormat, THREE.UnsignedByteType);
+    this.texture = new THREE.DataTexture(this.audioBuffer, this.waveWidth, this.channel * 2, THREE.LuminanceFormat, THREE.UnsignedByteType);
     this.texture.needsUpdate = true;
     this.quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2,2), null);
     this.scene.add(this.quad);
@@ -1559,18 +1566,18 @@ class SFShaderPass2 extends THREE.Pass {
   }
 
   update(time) {
-    this.time = time;
+    this.time = time - this.waveWidth / ( 2 *this.sampleRate);
     let waveCount = ~~(time * this.sampleRate);
-    const wsize = WAVE_WIDTH;
+    const wsize = this.waveWidth;
     for (let i = 0; i < wsize; ++i) {
-      for(let k = 0;k < CHANNEL;++k){
+      for(let k = 0,ke = this.channel;k < ke;++k){
         let r = 0, l = 0;
-        if ((waveCount + i) < (this.waves[k].data[0].length)) {
+        if (waveCount > 0 && (waveCount + i) < (this.waves[k].data[0].length)) {
           r = this.waves[k].data[0][waveCount + i];
           l = this.waves[k].data[1][waveCount + i];
         }
-        this.audioBuffer[i + k * 2 * wsize] = r * this.amp[k] | 0;
-        this.audioBuffer[i + (k * 2 + 1) * wsize] = l * this.amp[k] | 0;
+        this.audioBuffer[i + k * 2 * wsize] = r;// * this.waves[k].amp | 0;
+        this.audioBuffer[i + (k * 2 + 1) * wsize] = l;// * this.waves[k].amp | 0;
       }
     }
     //this.texture.set(this.audioBuffer);
@@ -3572,9 +3579,8 @@ const WAVE_FORMAT_EXTENSIBLE = 0xFFFE;//Determined by SubFormat
 
 
 class Audio {
-  constructor(sampleRate){
-    this.sampleRate = sampleRate;
-    this.context = new AudioContext({sampleRate:sampleRate});
+  constructor(){
+    this.context = new AudioContext();
   }
   load(filename) {
     const context = this.context;
@@ -3756,8 +3762,9 @@ class Audio {
 const readFile = denodeify(fs$1.readFile);
 const writeFile = denodeify(fs$1.writeFile); 
 
-const SAMPLE_RATE = 24000;
+let SAMPLE_RATE;
 let waveLength = 0;
+const WAVE_WIDTH = 16384;
 
 function saveImage(buffer,path,width,height)
 {
@@ -3776,6 +3783,33 @@ var time;
 
 // メイン
 window.addEventListener('load', async ()=>{
+  var audioAnalyser = new Audio();
+
+  const files = {
+  waves:[],
+  files:[
+    {path:'./media/separate/RS010.wav',amp:4.0},
+    {path:'./media/separate/RS009.wav',amp:4.0},
+    {path:'./media/separate/RS008.wav',amp:4.0},
+    {path:'./media/separate/RS007.wav',amp:4.0},
+    {path:'./media/separate/RS006.wav',amp:4.0},
+    {path:'./media/separate/RS005.wav',amp:4.0}, 
+    {path:'./media/separate/RS004.wav',amp:4.0},
+    {path:'./media/separate/RS003.wav',amp:4.0},
+    {path:'./media/separate/RS002.wav',amp:1.3},
+    {path:'./media/separate/RS001.wav',amp:4.0},
+    {path:'./media/separate/RS.wav',amp:1.0}
+  ]};
+
+  for(const file of files.files ){
+    let source = await audioAnalyser.load(file.path);
+    source.amp = file.amp;
+    files.waves.push(source);
+  }
+  
+  waveLength = files.waves[0].data[0].length;
+  SAMPLE_RATE = files.waves[0].samplesPerSec;
+
   var qstr = new QueryString();
   var params = qstr.parse(window.location.search.substr(1));
   var preview = params.preview == false;
@@ -3786,7 +3820,6 @@ window.addEventListener('load', async ()=>{
   const context = canvas.getContext('webgl2');
   //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
   var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
-  var audioAnalyser = new Audio(SAMPLE_RATE);
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
   renderer.domElement.id = 'console';
@@ -3797,7 +3830,7 @@ window.addEventListener('load', async ()=>{
   renderer.clear();
   const step = SAMPLE_RATE / fps;
   var waveCount = 0;
-  time = 0;//(60420 - 1500) /1000 ;//0.0;
+  time = 0;//-WAVE_WIDTH / (SAMPLE_RATE * 2);//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
   var endTime = 60.0 * 4.0 + 30.0;
   var frameSpeed = 1.0 / fps; 
@@ -3811,7 +3844,8 @@ window.addEventListener('load', async ()=>{
 
   //let renderPass = new THREE.RenderPass(scene, camera);
   // var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-  var animMain = new SFShaderPass2(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
+  var animMain = new SFShaderPass2(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,WAVE_WIDTH,files.waves);
+//  animMain.waves = files.waves;
 //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   animMain.renderToScreen = false;
   animMain.enabled = true;
@@ -3867,27 +3901,6 @@ window.addEventListener('load', async ()=>{
     sfCapturePass.renderToScreen = true;
     composer.addPass(sfCapturePass);
   }
-
-  //renderPass.renderToScreen = true;
-
-  function start(tween){
-    let t = tween();
-    return t.start.bind(t);
-  }
-
-  function fillEffect(){
-    return  new Tween.Tween({})
-      .to({},40)
-      .onStart(()=>{
-        glitchPass.goWild = true;
-      })
-      .onComplete(()=>{
-        glitchPass.goWild = false;
-      });
-  }
-
-  // テクスチャのアップデート
-  const START_OFFSET = 1678;
   var events = [
     // 馬のフェードイン・フェードアウト
     // {time:60420 - START_OFFSET,func:animMain.horseFadein()},
@@ -3909,161 +3922,161 @@ window.addEventListener('load', async ()=>{
     // {time:133.427 * 1000 - START_OFFSET,func:start(animMain.cameraTween4.bind(animMain))},
     // {time:180.420 * 1000 - START_OFFSET,func:start(animMain.cameraTween2.bind(animMain))},
     // drums fill
-    {time:5.874 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:6.294 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:5.874 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:6.294 * 1000 - START_OFFSET,func:start(fillEffect)},
 
-    {time:19.510 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:19.510 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:19.510 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:19.510 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:19.510 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:19.510 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:19.510 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:19.510 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:19.510 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:19.510 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
 
-    {time:32.727 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:32.727 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
+    // {time:32.727 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:32.727 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
 
-    {time:46.364 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:46.364 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:46.364 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:46.364 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:46.364 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:46.364 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:46.364 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:46.364 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:46.364 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:46.364 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
 
-    {time:49.719 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:49.719 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:49.719 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:49.719 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
     
-    {time:50.137 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:50.137 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:50.137 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:50.137 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
 
-    {time:59.794 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:59.794 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:59.794 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:59.794 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:59.794 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
-    {time:59.794 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
+    // {time:59.794 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:59.794 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:59.794 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:59.794 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:59.794 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:59.794 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
 
-    {time:79.722 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:79.722 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
+    // {time:79.722 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:79.722 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
 
-    {time:92.308 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:92.308 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:92.727 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:92.727 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:93.255 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:93.255 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:93.255 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:93.255 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:93.255 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
-    {time:93.255 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
+    // {time:92.308 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:92.308 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:92.727 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:92.727 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:93.255 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:93.255 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:93.255 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:93.255 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:93.255 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:93.255 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
 
-    {time:100.066 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:100.066 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:100.066 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:100.066 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:100.066 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:100.066 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:100.066 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:100.066 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:100.066 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:100.066 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
 
-    {time:106.575 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:106.575 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
+    // {time:106.575 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:106.575 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
 
-    {time:120.000 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:120.000 * 1000 - START_OFFSET + 210,func:start(fillEffect)},
-    {time:120.000 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
-    {time:120.000 * 1000 - START_OFFSET + 630,func:start(fillEffect)},
+    // {time:120.000 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:120.000 * 1000 - START_OFFSET + 210,func:start(fillEffect)},
+    // {time:120.000 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
+    // {time:120.000 * 1000 - START_OFFSET + 630,func:start(fillEffect)},
 
-    {time:132.800 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:132.800 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:132.800 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:132.800 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:132.800 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:132.800 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:132.800 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:132.800 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:132.800 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:132.800 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
 
-    {time:133.428 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:133.428 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:133.428 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:133.428 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:133.428 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
-    {time:133.428 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
-    {time:133.428 * 1000 - START_OFFSET + 105 * 6,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
+    // {time:133.428 * 1000 - START_OFFSET + 105 * 6,func:start(fillEffect)},
     
-    {time:153.570 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:153.570 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
+    // {time:153.570 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:153.570 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
 
-    {time:179.582 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:179.582 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:179.582 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:179.582 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:179.582 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:179.582 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
 
-    {time:180.002 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:180.002 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:180.002 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:180.002 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:180.002 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:180.002 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
 
-    {time:180.410 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:180.410 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:180.410 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:180.410 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:180.410 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
-    {time:180.410 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
-    {time:180.410 * 1000 - START_OFFSET + 105 * 6,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
+    // {time:180.410 * 1000 - START_OFFSET + 105 * 6,func:start(fillEffect)},
 
-    {time:187.134 * 1000 - START_OFFSET,func:start(fillEffect)},
-    {time:187.134 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
+    // {time:187.134 * 1000 - START_OFFSET,func:start(fillEffect)},
+    // {time:187.134 * 1000 - START_OFFSET + 420,func:start(fillEffect)},
 
-    {time:193.222 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:193.222 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:193.222 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:193.222 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:193.222 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:193.222 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:193.222 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:193.222 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:193.222 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:193.222 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
 
-    {time:193.841 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:193.841 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:193.841 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:193.841 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:193.841 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
-    {time:193.841 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
-    {time:193.841 * 1000 - START_OFFSET + 105 * 6,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
+    // {time:193.841 * 1000 - START_OFFSET + 105 * 6,func:start(fillEffect)},
 
-    {time:200.730 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:200.730 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:200.730 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:200.730 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:200.730 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:200.730 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:200.730 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:200.730 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:200.730 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:200.730 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
     
-    {time:207.276 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:207.276 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:207.276 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:207.276 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:207.276 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:207.276 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
 
-    {time:207.687 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:207.687 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:207.687 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:207.687 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:207.687 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:207.687 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
 
-    {time:214.199 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:214.199 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:214.199 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:214.199 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
 
-    {time:214.612 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:214.612 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:214.612 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:214.612 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
 
-    {time:220.068 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:220.068 * 1000 - START_OFFSET + 210,func:start(fillEffect)},
-    {time:220.068 * 1000 - START_OFFSET + 210 * 2,func:start(fillEffect)},
-    {time:220.068 * 1000 - START_OFFSET + 210 * 3,func:start(fillEffect)},
-    {time:220.068 * 1000 - START_OFFSET + 210 * 4,func:start(fillEffect)},
-    {time:220.068 * 1000 - START_OFFSET + 210 * 5,func:start(fillEffect)},
-    {time:220.068 * 1000 - START_OFFSET + 210 * 6,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET + 210,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET + 210 * 2,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET + 210 * 3,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET + 210 * 4,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET + 210 * 5,func:start(fillEffect)},
+    // {time:220.068 * 1000 - START_OFFSET + 210 * 6,func:start(fillEffect)},
 
-    {time:227.626 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:227.626 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:227.626 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:227.626 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:227.626 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:227.626 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:227.626 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:227.626 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:227.626 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:227.626 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
 
-    {time:233.492 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:233.492 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:233.492 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:233.492 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
 
-    {time:233.916 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:233.916 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:233.916 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:233.916 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
 
-    {time:234.234 * 1000 - START_OFFSET ,func:start(fillEffect)},
-    {time:234.234 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
-    {time:234.234 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
-    {time:234.234 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
-    {time:234.234 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
-    {time:234.234 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
+    // {time:234.234 * 1000 - START_OFFSET ,func:start(fillEffect)},
+    // {time:234.234 * 1000 - START_OFFSET + 105,func:start(fillEffect)},
+    // {time:234.234 * 1000 - START_OFFSET + 105 * 2,func:start(fillEffect)},
+    // {time:234.234 * 1000 - START_OFFSET + 105 * 3,func:start(fillEffect)},
+    // {time:234.234 * 1000 - START_OFFSET + 105 * 4,func:start(fillEffect)},
+    // {time:234.234 * 1000 - START_OFFSET + 105 * 5,func:start(fillEffect)},
 
     // 間奏エフェクト
     //{time:154.406 * 1000 - START_OFFSET,func:start(intEffect)},
@@ -4168,26 +4181,7 @@ window.addEventListener('load', async ()=>{
   //};
   await animMain.init;
   //await Promise.all([animMain.init/*,gpuPass.init*/]);
-  let files = [
-    {path:'./media/separate/RS010.wav',amp:2.0},
-    {path:'./media/separate/RS009.wav',amp:4.5},
-    {path:'./media/separate/RS008.wav',amp:4.0},
-    {path:'./media/separate/RS007.wav',amp:5.0},
-    {path:'./media/separate/RS006.wav',amp:5.0},
-    {path:'./media/separate/RS005.wav',amp:5.0}, 
-    {path:'./media/separate/RS004.wav',amp:5.0},
-    {path:'./media/separate/RS003.wav',amp:5.0},
-    {path:'./media/separate/RS002.wav',amp:1.3},
-    {path:'./media/separate/RS001.wav',amp:4.0}
-//    {path:'./media/separate/RS.wav',amp:1.0}
-  ];
-
-  for(const file of files ){
-    let source = await audioAnalyser.load(file.path);
-    animMain.waves.push(source);
-    animMain.amp.push(file.amp);
-  }
-  waveLength = animMain.waves[0].data[0].length;
+  
   await renderToFile(preview);
 
 });

@@ -34,9 +34,8 @@ const WAVE_FORMAT_EXTENSIBLE = 0xFFFE;//Determined by SubFormat
 
 
 export default class Audio {
-  constructor(sampleRate){
-    this.sampleRate = sampleRate;
-    this.context = new AudioContext({sampleRate:sampleRate});
+  constructor(){
+    this.context = new AudioContext();
   }
   load(filename) {
     const context = this.context;
