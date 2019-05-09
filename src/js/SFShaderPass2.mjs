@@ -24,6 +24,7 @@ uniform sampler2D tDiffuse;
 uniform vec2 resolution;
 uniform float time;
 uniform float amp[CHANNEL_INT];
+uniform float amp_current;
 
 in vec2 vUv;
 out vec4 color;
@@ -32,12 +33,15 @@ void main()	{
 
   // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
   float amplitude = amp[int(vUv.y * CHANNEL)];
-  float v = texture2D(tDiffuse, vUv).r;
-  if(abs(v - 0.5) < 0.003 ) discard;
-  v = clamp((v - 0.5) * amplitude + 0.5,0.0,1.0) / (CHANNEL * 2.0);
-  float y = floor(vUv.y * CHANNEL * 2.0) / (CHANNEL * 2.0) + v;
-  float c = 1.0 - smoothstep(0.0005,0.001,abs(vUv.y - y));
-  color = vec4(c,c,c,1.0);
+  float v = texture(tDiffuse, vUv).r;
+  float v2 = clamp(abs(texture(tDiffuse,vUv).r - 0.5) * 2.0 * amplitude,0.0,1.0);
+  float c = 0.0;
+  if(abs(v - 0.5) > 0.003 ){
+    v = clamp((v - 0.5) * amplitude + 0.5,0.0,1.0) / (CHANNEL * 2.0);
+    float y = floor(vUv.y * CHANNEL * 2.0) / (CHANNEL * 2.0) + v;
+    c = 1.0 - smoothstep(0.0003,0.001,abs(vUv.y - y));
+  }
+  color = vec4(clamp(c + v2,0.0,1.0),c,c,1.0);
 }
 `;
 
@@ -112,8 +116,8 @@ export default class SFShaderPass2 extends THREE.Pass {
       for(let k = 0,ke = this.channel;k < ke;++k){
         let r = 0, l = 0;
         if (waveCount > 0 && (waveCount + i) < (this.waves[k].data[0].length)) {
-          r = this.waves[k].data[0][waveCount + i];
-          l = this.waves[k].data[1][waveCount + i];
+          l = this.waves[k].data[0][waveCount + i];
+          r = this.waves[k].data[1][waveCount + i];
         }
         this.audioBuffer[i + k * 2 * wsize] = r;// * this.waves[k].amp | 0;
         this.audioBuffer[i + (k * 2 + 1) * wsize] = l;// * this.waves[k].amp | 0;
