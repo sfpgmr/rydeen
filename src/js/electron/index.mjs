@@ -37,7 +37,7 @@ import sharp  from 'sharp';
 import QueryString  from '../QueryString.mjs';
 import SF8Pass from '../SF8Pass.mjs';
 import SFShaderPass from '../SFShaderPass.mjs';
-import SFShaderPass2 from '../SFShaderPass2.mjs';
+import SFShaderPass3 from '../SFShaderPass3.mjs';
 import HorseAnim from '../HorseAnim.mjs';
 import SFCapturePass from '../SFCapturePass.mjs';
 import SFRydeen from '../SFRydeen.mjs';
@@ -48,7 +48,7 @@ import AudioAnalyser from '../AudioAnalyser.mjs';
 
 let SAMPLE_RATE;
 let waveLength = 0;
-const WAVE_WIDTH = 16384;
+const WAVE_WIDTH = 8192;
 
 function saveImage(buffer,path,width,height)
 {
@@ -92,17 +92,17 @@ window.addEventListener('load', async ()=>{
   const files = {
   waves:[],
   files:[
-    {path:'./media/separate/RS010.wav',amp:4.0},
-    {path:'./media/separate/RS009.wav',amp:4.5},
+   // {path:'./media/separate/RS010.wav',amp:4.0},
+   // {path:'./media/separate/RS009.wav',amp:4.5},
     {path:'./media/separate/RS008.wav',amp:4.5},
     {path:'./media/separate/RS007.wav',amp:4.5},
     {path:'./media/separate/RS006.wav',amp:4.5},
-    {path:'./media/separate/RS005.wav',amp:4.5}, 
+    {path:'./media/separate/RS005.wav',amp:5.0}, 
     {path:'./media/separate/RS004.wav',amp:4.5},
     {path:'./media/separate/RS003.wav',amp:4.5},
     {path:'./media/separate/RS002.wav',amp:1.3},
-    {path:'./media/separate/RS001.wav',amp:2.0},
-    {path:'./media/separate/RS.wav',amp:1.0}
+    {path:'./media/separate/RS001.wav',amp:2.0}
+ //   {path:'./media/separate/RS.wav',amp:1.0}
   ]};
 
   for(const file of files.files ){
@@ -162,7 +162,7 @@ window.addEventListener('load', async ()=>{
 
   //let renderPass = new THREE.RenderPass(scene, camera);
   // var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-  var animMain = new SFShaderPass2(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,WAVE_WIDTH,files.waves);
+  var animMain = new SFShaderPass3(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,WAVE_WIDTH,files.waves);
 //  animMain.waves = files.waves;
 //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   animMain.renderToScreen = false;
