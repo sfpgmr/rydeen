@@ -1,11 +1,13 @@
 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
 var fs$1 = require('fs');
 require('electron');
-var sharp = _interopDefault(require('sharp'));
+var sharp = require('sharp');
 require('url');
+
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var sharp__default = /*#__PURE__*/_interopDefaultLegacy(sharp);
 
 function denodeify (nodeFunc){
     var baseArgs = Array.prototype.slice.call(arguments, 1);
@@ -25,8 +27,6 @@ function denodeify (nodeFunc){
         });
     }
 }
-
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -897,7 +897,7 @@ TWEEN.Interpolation = {
 
 	}
 
-})(commonjsGlobal);
+})();
 });
 
 var eventemitter3 = createCommonjsModule(function (module) {
@@ -3821,7 +3821,7 @@ const WAVE_WIDTH = 8192;
 function saveImage(buffer,path,width,height)
 {
   return new Promise((resolve,reject)=>{
-    sharp(buffer,{raw:{width:width,height:height,channels:4}})
+    sharp__default['default'](buffer,{raw:{width:width,height:height,channels:4}})
     .flip()
     //.webp({lossless:true})
     .toFile(path,(err)=>{
@@ -3842,17 +3842,28 @@ window.addEventListener('load', async ()=>{
   files:[
    // {path:'./media/separate/RS010.wav',amp:4.0},
    // {path:'./media/separate/RS009.wav',amp:4.5},
-    {path:'./media/separate/RS008.wav',amp:4.5},
-    {path:'./media/separate/RS007.wav',amp:4.5},
-    {path:'./media/separate/RS006.wav',amp:4.5},
-    {path:'./media/separate/RS005.wav',amp:5.0}, 
-    {path:'./media/separate/RS004.wav',amp:4.5},
-    {path:'./media/separate/RS003.wav',amp:4.5},
-    {path:'./media/separate/RS002.wav',amp:1.3},
-    {path:'./media/separate/RS001.wav',amp:2.0}
+    {path:'./media/separate/rs009.wav',amp:4.5},
+    {path:'./media/separate/rs008.wav',amp:4.5},
+    {path:'./media/separate/rs007.wav',amp:4.5},
+    {path:'./media/separate/rs006.wav',amp:5.0}, 
+    {path:'./media/separate/rs005.wav',amp:4.5},
+    {path:'./media/separate/rs004.wav',amp:4.5},
+    {path:'./media/separate/rs003.wav',amp:1.3},
+    {path:'./media/separate/rs002.wav',amp:2.0}
  //   {path:'./media/separate/RS.wav',amp:1.0}
   ]};
 
+  // const files = {
+  //   waves:[],
+  //   files:[
+  //     {path:'./media/separate/tp005.wav',amp:1.0}, 
+  //     {path:'./media/separate/tp004.wav',amp:3.0},
+  //     {path:'./media/separate/tp003.wav',amp:3.0},
+  //     {path:'./media/separate/tp002.wav',amp:2.0},
+  //     {path:'./media/separate/tp001.wav',amp:2.0}
+  //  //   {path:'./media/separate/tp.wav',amp:1.0}
+  //   ]};
+  
   for(const file of files.files ){
     let source = await audioAnalyser.load(file.path);
     source.amp = file.amp;
@@ -3884,7 +3895,8 @@ window.addEventListener('load', async ()=>{
   var waveCount = 0;
   time = 0;//-WAVE_WIDTH / (SAMPLE_RATE * 2);//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
-  var endTime = 60.0 * 4.0 + 30.0;
+//  var endTime = 60.0 * 4.0 + 30.0;
+  var endTime = 60.0 * 4.0 + 36.0;
   var frameSpeed = 1.0 / fps; 
   var writeFilePromises = []; 
 

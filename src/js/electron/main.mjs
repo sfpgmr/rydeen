@@ -13,7 +13,10 @@ let mainWindow
 function createWindow () {
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 1920, height: 1080,useContentSize:true,resizable:false});
+  mainWindow = new BrowserWindow({width: 1920, height: 1080,useContentSize:true,resizable:false,    webPreferences: {
+    nodeIntegration: true
+  }
+});
   var preview = false;
   var framerate = 30;
   process.argv.forEach((arg,i)=>{

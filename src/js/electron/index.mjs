@@ -94,17 +94,28 @@ window.addEventListener('load', async ()=>{
   files:[
    // {path:'./media/separate/RS010.wav',amp:4.0},
    // {path:'./media/separate/RS009.wav',amp:4.5},
-    {path:'./media/separate/RS008.wav',amp:4.5},
-    {path:'./media/separate/RS007.wav',amp:4.5},
-    {path:'./media/separate/RS006.wav',amp:4.5},
-    {path:'./media/separate/RS005.wav',amp:5.0}, 
-    {path:'./media/separate/RS004.wav',amp:4.5},
-    {path:'./media/separate/RS003.wav',amp:4.5},
-    {path:'./media/separate/RS002.wav',amp:1.3},
-    {path:'./media/separate/RS001.wav',amp:2.0}
+    {path:'./media/separate/rs009.wav',amp:4.5},
+    {path:'./media/separate/rs008.wav',amp:4.5},
+    {path:'./media/separate/rs007.wav',amp:4.5},
+    {path:'./media/separate/rs006.wav',amp:5.0}, 
+    {path:'./media/separate/rs005.wav',amp:4.5},
+    {path:'./media/separate/rs004.wav',amp:4.5},
+    {path:'./media/separate/rs003.wav',amp:1.3},
+    {path:'./media/separate/rs002.wav',amp:2.0}
  //   {path:'./media/separate/RS.wav',amp:1.0}
   ]};
 
+  // const files = {
+  //   waves:[],
+  //   files:[
+  //     {path:'./media/separate/tp005.wav',amp:1.0}, 
+  //     {path:'./media/separate/tp004.wav',amp:3.0},
+  //     {path:'./media/separate/tp003.wav',amp:3.0},
+  //     {path:'./media/separate/tp002.wav',amp:2.0},
+  //     {path:'./media/separate/tp001.wav',amp:2.0}
+  //  //   {path:'./media/separate/tp.wav',amp:1.0}
+  //   ]};
+  
   for(const file of files.files ){
     let source = await audioAnalyser.load(file.path);
     source.amp = file.amp;
@@ -144,7 +155,8 @@ window.addEventListener('load', async ()=>{
   var index = 0;
   time = 0;//-WAVE_WIDTH / (SAMPLE_RATE * 2);//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
-  var endTime = 60.0 * 4.0 + 30.0;
+//  var endTime = 60.0 * 4.0 + 30.0;
+  var endTime = 60.0 * 4.0 + 36.0;
   var frameSpeed = 1.0 / fps; 
   var delta = frameSpeed;
   var previewCount = 0;

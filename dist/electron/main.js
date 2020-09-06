@@ -1,13 +1,15 @@
 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+var electron = require('electron');
 
-var electron = _interopDefault(require('electron'));
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var electron__default = /*#__PURE__*/_interopDefaultLegacy(electron);
 
 // Module to control application life.
-const app = electron.app;
+const app = electron__default['default'].app;
 // Module to create native browser window.
-const BrowserWindow = electron.BrowserWindow;
+const BrowserWindow = electron__default['default'].BrowserWindow;
 
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -17,7 +19,10 @@ let mainWindow;
 function createWindow () {
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 1920, height: 1080,useContentSize:true,resizable:false});
+  mainWindow = new BrowserWindow({width: 1920, height: 1080,useContentSize:true,resizable:false,    webPreferences: {
+    nodeIntegration: true
+  }
+});
   var preview = false;
   var framerate = 30;
   process.argv.forEach((arg,i)=>{

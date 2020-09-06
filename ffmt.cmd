@@ -3,8 +3,8 @@
 
 set generate=0
 set fps=60
-set ver=96
-set output=rydeen.mp4
+set ver=85
+set output=technopolis.mp4
 set play=0
 
 rem パラメータチェック
@@ -78,7 +78,7 @@ rem ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/rydeen.wav -filte
 rem ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/rydeen.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=262:d=4[out]" -map "[out]":v -map 1:a -t 00:04:30 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -preset losslesshp -c:a copy -movflags faststart ./media/!output! -y
 
 
-ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/separate/rydeen-001.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - Rydeen (!ver!) performed by SFPG',fade=t=out:st=259:d=4[out]" -map "[out]":v -map 1:a -t 00:04:32 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 6000k -r:a 96000 -b:v 30M -minrate 30M -maxrate 30M -qmin 1 -qmax 20 -movflags faststart ./media/!output! -y
+ffmpeg  -framerate !fps! -i ./temp/out%%06d.jpg -i ./media/technopolis.wav -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - TECHNOPOLIS (!ver!) performed by SFPG',fade=t=out:st=247:d=4[out]" -map "[out]":v -map 1:a -t 00:04:20 -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 6000k -r:a 96000 -b:v 30M -minrate 30M -maxrate 30M -qmin 1 -qmax 20 -movflags faststart ./media/!output! -y
 
 
 if !play!==1 (
