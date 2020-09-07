@@ -24,8 +24,8 @@
   },
   "homepage": "https://github.com/electron/electron-quick-start#readme",
   "devDependencies": {
-    "electron-rebuild": "^1.8.4",
-    "rollup": "^1.7.0",
+    "electron-rebuild": "^2.0.2",
+    "rollup": "^1.32.1",
     "rollup-plugin-commonjs": "^9.2.1",
     "rollup-plugin-node-resolve": "^4.0.1",
     "rollup-watch": "^4.3.1"
