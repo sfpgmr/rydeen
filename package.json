@@ -5,7 +5,7 @@
   "main": "./dist/electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build":"build.cmd"
+    "build": "build.cmd"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/electron/electron-quick-start#readme",
   "devDependencies": {
-    "electron-rebuild": "^1.8.4",
+    "electron-rebuild": "^2.0.2",
     "rollup": "^0.36.4",
     "rollup-plugin-commonjs": "^5.0.5",
     "rollup-plugin-node-resolve": "^2.1.1",
