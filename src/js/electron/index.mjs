@@ -37,7 +37,7 @@ import sharp  from 'sharp';
 import QueryString  from '../QueryString.mjs';
 import SF8Pass from '../SF8Pass.mjs';
 import SFShaderPass from '../SFShaderPass.mjs';
-import SFShaderPass3 from '../SFShaderPass3.mjs';
+import SFShaderPass4 from '../SFShaderPass4.mjs';
 import HorseAnim from '../HorseAnim.mjs';
 import SFCapturePass from '../SFCapturePass.mjs';
 import SFRydeen from '../SFRydeen.mjs';
@@ -48,7 +48,7 @@ import AudioAnalyser from '../AudioAnalyser.mjs';
 
 let SAMPLE_RATE;
 let waveLength = 0;
-const WAVE_WIDTH = 8192;
+const WAVE_WIDTH = 512;
 
 function saveImage(buffer,path,width,height)
 {
@@ -94,14 +94,29 @@ window.addEventListener('load', async ()=>{
   files:[
    // {path:'./media/separate/RS010.wav',amp:4.0},
    // {path:'./media/separate/RS009.wav',amp:4.5},
-    {path:'./media/separate/rs009.wav',amp:4.5},
-    {path:'./media/separate/rs008.wav',amp:4.5},
-    {path:'./media/separate/rs007.wav',amp:4.5},
-    {path:'./media/separate/rs006.wav',amp:5.0}, 
-    {path:'./media/separate/rs005.wav',amp:4.5},
-    {path:'./media/separate/rs004.wav',amp:4.5},
-    {path:'./media/separate/rs003.wav',amp:1.3},
-    {path:'./media/separate/rs002.wav',amp:2.0}
+   {path:'./media/separate/rs001.wav',amp:0.0},
+   {path:'./media/separate/rs023.wav',amp:0.0},
+   {path:'./media/separate/rs022.wav',amp:0.0},
+   {path:'./media/separate/rs021.wav',amp:0.0},
+   {path:'./media/separate/rs020.wav',amp:0.0},
+   {path:'./media/separate/rs019.wav',amp:0.0},
+   {path:'./media/separate/rs018.wav',amp:0.0},
+   {path:'./media/separate/rs017.wav',amp:0.0},
+   {path:'./media/separate/rs016.wav',amp:0.0},
+   {path:'./media/separate/rs015.wav',amp:0.0},
+   {path:'./media/separate/rs014.wav',amp:0.0},
+   {path:'./media/separate/rs013.wav',amp:0.0},
+   {path:'./media/separate/rs012.wav',amp:0.0},
+   {path:'./media/separate/rs011.wav',amp:0.0},
+   {path:'./media/separate/rs010.wav',amp:0.0},
+   {path:'./media/separate/rs009.wav',amp:3.0},
+    {path:'./media/separate/rs008.wav',amp:0.0},
+    {path:'./media/separate/rs007.wav',amp:0.0},
+    {path:'./media/separate/rs006.wav',amp:0.0}, 
+    {path:'./media/separate/rs005.wav',amp:0.0},
+    {path:'./media/separate/rs004.wav',amp:0.0},
+    {path:'./media/separate/rs003.wav',amp:0.0},
+    {path:'./media/separate/rs002.wav',amp:0.0}
  //   {path:'./media/separate/RS.wav',amp:1.0}
   ]};
 
@@ -118,7 +133,20 @@ window.addEventListener('load', async ()=>{
   
   for(const file of files.files ){
     let source = await audioAnalyser.load(file.path);
-    source.amp = file.amp;
+    // calc amp
+    let max = 0;
+    if(file.amp != 0.0){
+      source.amp = file.amp ;
+    } else {
+      for(let i = 0;i < source.data[0].length;++i){
+        const l = Math.abs(source.data[0][i] - 128);
+        const r = Math.abs(source.data[1][i] - 128);
+        max = Math.max(l,r,max);
+      }
+  
+      source.amp = 128 / max;
+  
+    }
     files.waves.push(source);
   }
   
@@ -134,7 +162,7 @@ window.addEventListener('load', async ()=>{
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl2');
   //var renderer = new THREE.WebGLRenderer({ antialias: false, sortObjects: true });
-  var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: false, sortObjects: true });
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context,antialias: true, sortObjects: true });
   renderer.setSize(WIDTH, HEIGHT);
   renderer.setClearColor(0x000000, 1);
   renderer.domElement.id = 'console';
@@ -174,7 +202,7 @@ window.addEventListener('load', async ()=>{
 
   //let renderPass = new THREE.RenderPass(scene, camera);
   // var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-  var animMain = new SFShaderPass3(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,WAVE_WIDTH,files.waves);
+  var animMain = new SFShaderPass4(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,4,files.waves);
 //  animMain.waves = files.waves;
 //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   animMain.renderToScreen = false;

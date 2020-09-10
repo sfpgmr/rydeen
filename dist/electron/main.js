@@ -23,6 +23,7 @@ function createWindow () {
     nodeIntegration: true
   }
 });
+  //mainWindow.webContents.openDevTools()
   var preview = false;
   var framerate = 30;
   process.argv.forEach((arg,i)=>{

@@ -23,8 +23,7 @@ let fragmentShader =
 precision highp float;
 precision highp int;
 
-uniform sampler2D chL;
-uniform sampler2D chR;
+uniform sampler2D ch;
 uniform vec2 resolution;
 uniform float time;
 uniform float amp[CHANNEL_INT];
@@ -34,75 +33,73 @@ in vec2 vUv;
 out vec4 color;
 
 void main()	{
-
   // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
-  int channel = int(vUv.y * CHANNEL);
-  float amplitude = amp[channel];
-  float y = vUv.y * CHANNEL - float(channel);
+  int xi = int(vUv.x * X);
+  int xsi= int(vUv.x * X * 2.);
+  int yi = int(vUv.y * Y);
+  int channel = xi + (yi * X_INT);
 
-  // channel L
-  float l = clamp((texture(chL, vUv).r - 0.5) * amplitude + 0.5,0.0,1.0);
-  float cl;
-  if(l <= 0.5 && y <= 0.5){
-    if(y >= l){
-      cl = 1.0;
+
+  if(channel == 23) {
+    color = vec4(0.0,0.0,0.0,1.0);
+    return;
+  }
+
+  float amplitude = amp[channel];
+  float y = vUv.y * Y - float(yi);
+  float v = 0.0;
+  float c = 0.0;
+
+  v = clamp((texture(ch, vUv).r - 0.5) * amplitude + 0.5,0.0,1.0);
+
+
+  if(abs(v - 0.5) < (0.0025 * amplitude)) {
+    color = vec4(0.0,0.0,0.0,1.0);
+    return;
+  }
+
+  if(v <= 0.5 && y <= 0.5){
+    if(y >= v){
+      c = 1.0;
     }
-  } else if(l > 0.5 && y > 0.5){
-    if(y < l){
-      cl = 1.0;
+  } else if(v > 0.5 && y > 0.5){
+    if(y < v){
+      c = 1.0;
     }
   }
-  // //float l1 = abs(texture(chL,vec2(0.5,vUv.y)).r - 0.5) * 2.0;
-  // //if(abs(l - 0.5) > 0.003 ){
-  //   {
-  //     l = clamp((l - 0.5) * amplitude + 0.5,0.0,1.0) / (CHANNEL);
-  //     float y = floor(vUv.y * CHANNEL ) / (CHANNEL) + l;
-  //     cl = 1.0 - smoothstep(0.0003,0.001,abs(vUv.y - y));
-  //   }
-  // //}
 
-  // channel R
-   float r = clamp((texture(chR, vec2(1.0 - vUv.x,vUv.y)).r - 0.5) * amplitude + 0.5,0.0,1.0);
-   float cr;
-   if(r <= 0.5 && y <= 0.5){
-     if(y >= r){
-       cr = 1.0;
-     }
-   } else if(r > 0.5 && y > 0.5){
-     if(y < r ){
-       cr = 1.0;
-     }
-   }
- //   //float r1 = abs(texture(chR,vec2(0.5,vUv.y)).r - 0.5) * 2.0;
-//   //if(abs(r - 0.5) > 0.002 ){
-//     {
-
-//       r = clamp((r - 0.5) * amplitude + 0.5,0.0,1.0) / (CHANNEL);
-//       float y = floor(vUv.y * CHANNEL) / (CHANNEL) + r;
-//       cr = 1.0 - smoothstep(0.0003,0.001,abs(vUv.y - y));
-  
-//     }
-//  // }
-//   //float b = max(r1,l1);
-//   //cl = clamp(cl + b,0.0,1.0);
-//   // cr = clamp(cr + b,0.0,1.0);
-  color = (channel & 0x1) == 0 ? vec4(cl,cr,0.0,1.0) : vec4(cl,0.0,cr,1.0);
+  if((yi & 0x1) == 0) {
+    if((xsi & 0x1) == 0) {
+      color = vec4(c,0.0,0.0,1.0);
+    } else {
+      color = vec4(0.0,c,0.0,1.0);
+    }
+  } else {
+    if((xsi & 0x1) == 0) {
+      color = vec4(0.0,0.0,c,1.0);
+    } else {
+      color = vec4(c,0.0,0.0,1.0);
+    }
+  }
 }
 `;
 
 //     let geometry = new THREE.PlaneBufferGeometry( 1920, 1080 );
 let uniforms = {
-  chR: { value: null },
-  chL: { value: null },
+  ch: { value: null },
+//  chL: { value: null },
   resolution: { value: new THREE.Vector2() },
   time: { value: 0.0 }
 };
 
 export default class SFShaderPass4 extends THREE.Pass {
-  constructor(width, height, fps, endTime, sampleRate = 96000,channel,wave_width,waves) {
+  constructor(width, height, fps, endTime, sampleRate = 96000,channel,divide,waves) {
     super();
+    divide <<= 1;
     this.channel = channel;
-    this.waveWidth = wave_width;
+    this.divide = divide;
+    this.divide_y = Math.ceil(this.channel / (divide >> 1)) | 0;
+    this.waveWidth =  width / divide;
     this.width = width;
     this.height = height;
     this.time = 0;
@@ -123,6 +120,7 @@ export default class SFShaderPass4 extends THREE.Pass {
     this.uniforms = THREE.UniformsUtils.clone(uniforms);
     this.uniforms.resolution.value.x = width;
     this.uniforms.resolution.value.y = height;
+
     for(let i = 0;i < channel;++i){
       this.uniforms.amp.value[i] = this.waves[i].amp;
     }
@@ -132,20 +130,24 @@ export default class SFShaderPass4 extends THREE.Pass {
       fragmentShader: fragmentShader,
       defines: {
         CHANNEL: this.channel + '.0',
-        CHANNEL_INT: this.channel
+        CHANNEL_INT: this.channel,
+        X: (this.divide >> 1) + '.0',
+        X_INT: this.divide  >> 1,
+        Y:this.divide_y + '.0',
+        Y_INT:this.divide_y
       }
     });
 
     this.camera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
     this.scene = new THREE.Scene();
 
-    this.audioBufferL = new Uint8Array(this.waveWidth * this.channel);
-    this.audioBufferR = new Uint8Array(this.waveWidth * this.channel);
+    this.audioBuffer = new Uint8Array(this.waveWidth * divide * this.divide_y);
+    //this.audioBufferR = new Uint8Array(this.waveWidth * this.channel);
 
-    this.textureL = new THREE.DataTexture(this.audioBufferL, this.waveWidth, this.channel, THREE.LuminanceFormat, THREE.UnsignedByteType);
-    this.textureR = new THREE.DataTexture(this.audioBufferR, this.waveWidth, this.channel, THREE.LuminanceFormat, THREE.UnsignedByteType);
-    this.textureL.needsUpdate = true;
-    this.textureR.needsUpdate = true;
+    this.texture = new THREE.DataTexture(this.audioBuffer, this.waveWidth * divide, this.divide_y, THREE.LuminanceFormat, THREE.UnsignedByteType);
+    //this.textureR = new THREE.DataTexture(this.audioBufferR, this.waveWidth, this.channel, THREE.LuminanceFormat, THREE.UnsignedByteType);
+    this.texture.needsUpdate = true;
+    //this.textureR.needsUpdate = true;
     this.quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2,2), null);
     this.scene.add(this.quad);
     //this.setSize(this.width,this.height);
@@ -167,20 +169,21 @@ export default class SFShaderPass4 extends THREE.Pass {
     for(let ch = 0,chend = this.channel;ch < chend;++ch){
       const chParam = [];
       const wave = this.waves[ch];
-      for(let wch = 0,wchEnd = wave.length;wch < wchEnd;++wch){
-        const w = wave[wch];
+      const wlength = wave.data[0].length;
+      for(let wch = 0,wchEnd = wave.data.length;wch < wchEnd;++wch){
+        const w = wave.data[wch];
         let max = 0,min = 255;
-        for(let wp = waveCount,wpEnd = waveCount + this.wave_width;wp < wpEnd;++wp){
+        for(let wp = waveCount,wpEnd = waveCount + this.waveWidth;wp < wpEnd;++wp){
           if(w[wp] > max) max = w[wp];
           if(w[wp] < min) min = w[wp];
         }
         
         let triggerLevel = (max + min) >> 1;
         let qx = waveCount;
-        let qxEnd = this.waveWidth >> 1 + waveCount;
+        let qxEnd = (this.waveWidth >> 1) + waveCount;
         if(qxEnd >= w.length) qxEnd = w.length - 1;
 
-        while(w[qx + waveCount] >= (triggerLevel) && (qx < qxEnd)){
+        while(w[qx] >= (triggerLevel) && (qx < qxEnd)){
           ++qx;
         }
 
@@ -196,13 +199,13 @@ export default class SFShaderPass4 extends THREE.Pass {
             while(w[qx] >= triggerLevel && qx < qxEnd) qx++;
           }
 
-          if(isUp){
+          if(!isUp){
             distances.push([qx - ctr,qx]);
           }
         }
 
-        ctr = 0;
-        highest = [0,0];
+        ctr = 1;
+        let highest = [0,qx];
         for(const d of distances){
           if(d[0] > highest[0]){
             highest = [d[0],d[1]];
@@ -217,41 +220,55 @@ export default class SFShaderPass4 extends THREE.Pass {
       }
 
       {
-        let wcntL = chParam[0] - (this.waveWidth >> 1);
+        const wdata = wave.data[0];
+        const buffer = this.audioBuffer;
+        const startPos = chParam[0];
+        const waveWidth = this.waveWidth;
+
+        let wcntL = startPos - (waveWidth >> 1);
         if(wcntL < 0)  wcntL = 0;
-        let wcntLEnd = wcntL + this.waveWidth;
-        if(wcntLEnd > wave[0].length) wcntLEnd = wave[0].length;
+        let wcntLEnd = wcntL + waveWidth;
+        if(wcntLEnd > wlength) wcntLEnd = wlength;
   
-        let bufferpos = 0;
+        let bufferpos = waveWidth * ch * 2;
+
         while(wcntL < wcntLEnd){
-          this.audioBufferL[bufferpos] = wave[0][wcntL];
+          buffer[bufferpos] = wdata[wcntL];
           ++wcntL;
           ++bufferpos;
         }
   
-        if(bufferpos < wave[0].length){
-          this.audioBufferL.fill(0,bufferpos,wave[0].length -1);
+        if(bufferpos < (waveWidth * (ch * 2 + 1))){
+          buffer.fill(0,bufferpos,waveWidth * (ch * 2 + 1) - 1);
         }
   
       }
 
+      
       {
-      let wcntR = chParam[1] - (this.waveWidth >> 1);
-        if(wcntR < 0)  wcntR = 0;
-        let wcntREnd = wcntR + this.waveWidth;
-        if(wcntREnd > wave[1].length) wcntREnd = wave[1].length;
+        const wdata = wave.data[1];
+        const buffer = this.audioBuffer;
+        const startPos = chParam[1];
+        const waveWidth = this.waveWidth;
 
-        let bufferpos = 0;
-        while(wcntR < wcntREnd){
-          this.audioBufferR[bufferpos] = wave[1][wcntR];
-          ++wcntR;
+        let wcntL = startPos  - (waveWidth >> 1);
+        if(wcntL < 0)  wcntL = 0;
+        let wcntLEnd = wcntL + waveWidth;
+        if(wcntLEnd > wlength) wcntLEnd = wlength;
+  
+        let bufferpos = waveWidth * (ch * 2 + 1);
+        while(wcntL < wcntLEnd){
+          buffer[bufferpos] = wdata[wcntL];
+          ++wcntL;
           ++bufferpos;
         }
-
-        if(bufferpos < wave[1].length){
-          this.audioBufferR.fill(0,bufferpos,wave[1].length -1);
+  
+        if(bufferpos < (waveWidth * (ch * 2 + 2))){
+          buffer.fill(0,bufferpos,waveWidth * (ch * 2 + 2) - 1);
         }
+  
       }
+
 
     }
 
@@ -267,14 +284,14 @@ export default class SFShaderPass4 extends THREE.Pass {
     //   }
     // }
     //this.texture.set(this.audioBuffer);
-    this.textureL.needsUpdate = true;
-    this.textureR.needsUpdate = true;
+    this.texture.needsUpdate = true;
+    //this.textureR.needsUpdate = true;
 
   }
 
   render(renderer, writeBuffer, readBuffer, delta, maskActive) {
-    this.uniforms["chR"].value = this.textureR;
-    this.uniforms["chL"].value = this.textureL;
+    this.uniforms["ch"].value = this.texture;
+    //this.uniforms["chL"].value = this.textureL;
     this.uniforms["time"].value = this.time;
     //this.uniforms.needsUpdate = true;
     this.quad.material = this.material;
