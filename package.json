@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/electron/electron-quick-start#readme",
   "devDependencies": {
-    "electron-rebuild": "^2.0.2",
+    "electron-rebuild": "^2.0.3",
     "rollup": "^0.36.4",
     "rollup-plugin-commonjs": "^5.0.5",
     "rollup-plugin-node-resolve": "^2.1.1",
@@ -35,7 +35,7 @@
     "eventemitter3": "^2.0.3",
     "midifile": "^1.0.4",
     "mixin": "^0.2.0",
-    "sharp": "^0.23.0",
+    "sharp": "^0.26.0",
     "svg-mesh-3d": "^1.1.0",
     "three": "^0.100.0",
     "tween.js": "^16.6.0"
