@@ -31,11 +31,11 @@
   },
   "dependencies": {
     "d3": "^5.9.2",
-    "electron": "^3.1.6",
+    "electron": "^4.2.12",
     "eventemitter3": "^2.0.3",
     "midifile": "^1.0.4",
     "mixin": "^0.2.0",
-    "sharp": "^0.21.3",
+    "sharp": "^0.26.0",
     "svg-mesh-3d": "^1.1.0",
     "three": "^0.102.1",
     "tween.js": "^16.6.0"
