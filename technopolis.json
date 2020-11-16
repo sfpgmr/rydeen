@@ -1,0 +1,10 @@
+ {
+    "songLengthSec":270,
+    "waves":[],
+    "files":[
+      {"path":"./media/separate/tp005.wav","amp":1.0}, 
+      {"path":"./media/separate/tp004.wav","amp":3.0},
+      {"path":"./media/separate/tp003.wav","amp":3.0},
+      {"path":"./media/separate/tp002.wav","amp":2.0},
+      {"path":"./media/separate/tp001.wav","amp":2.0}
+    ]}
