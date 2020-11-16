@@ -45,10 +45,12 @@ import SFGpGpuPass from '../SFGpGpuPass.mjs';
 import GlitchPass from '../GlitchPass.mjs';
 //import DSP from '../dsp';
 import AudioAnalyser from '../AudioAnalyser.mjs';
+import {ipcRenderer} from 'electron';
 
 let SAMPLE_RATE;
 let waveLength = 0;
 const WAVE_WIDTH = 512;
+const fsp = fs.promises;
 
 function saveImage(buffer,path,width,height)
 {
@@ -86,52 +88,14 @@ function createShape(geometry, color, x, y, z, rx, ry, rz, s) {
 var time;
 
 // メイン
-window.addEventListener('load', async ()=>{
+ipcRenderer.on('render', async (event,config)=>{
   var audioAnalyser = new AudioAnalyser();
-
-  const files = {
-  waves:[],
-  files:[
-   // {path:'./media/separate/RS010.wav',amp:4.0},
-   // {path:'./media/separate/RS009.wav',amp:4.5},
-   {path:'./media/separate/rs001.wav',amp:0.0},
-   {path:'./media/separate/rs023.wav',amp:0.0},
-   {path:'./media/separate/rs022.wav',amp:0.0},
-   {path:'./media/separate/rs021.wav',amp:0.0},
-   {path:'./media/separate/rs020.wav',amp:0.0},
-   {path:'./media/separate/rs019.wav',amp:0.0},
-   {path:'./media/separate/rs018.wav',amp:0.0},
-   {path:'./media/separate/rs017.wav',amp:0.0},
-   {path:'./media/separate/rs016.wav',amp:0.0},
-   {path:'./media/separate/rs015.wav',amp:0.0},
-   {path:'./media/separate/rs014.wav',amp:0.0},
-   {path:'./media/separate/rs013.wav',amp:0.0},
-   {path:'./media/separate/rs012.wav',amp:0.0},
-   {path:'./media/separate/rs011.wav',amp:0.0},
-   {path:'./media/separate/rs010.wav',amp:0.0},
-   {path:'./media/separate/rs009.wav',amp:3.0},
-    {path:'./media/separate/rs008.wav',amp:0.0},
-    {path:'./media/separate/rs007.wav',amp:0.0},
-    {path:'./media/separate/rs006.wav',amp:0.0}, 
-    {path:'./media/separate/rs005.wav',amp:0.0},
-    {path:'./media/separate/rs004.wav',amp:0.0},
-    {path:'./media/separate/rs003.wav',amp:0.0},
-    {path:'./media/separate/rs002.wav',amp:0.0}
- //   {path:'./media/separate/RS.wav',amp:1.0}
-  ]};
-
-  // const files = {
-  //   waves:[],
-  //   files:[
-  //     {path:'./media/separate/tp005.wav',amp:1.0}, 
-  //     {path:'./media/separate/tp004.wav',amp:3.0},
-  //     {path:'./media/separate/tp003.wav',amp:3.0},
-  //     {path:'./media/separate/tp002.wav',amp:2.0},
-  //     {path:'./media/separate/tp001.wav',amp:2.0}
-  //  //   {path:'./media/separate/tp.wav',amp:1.0}
-  //   ]};
+//  var qstr = new QueryString();
+//  var params = qstr.parse(window.location.search.substr(1));
+//  const files = JSON.parse(await fsp.readFile(params.datapath,"utf-8"));
   
-  for(const file of files.files ){
+  for(const file of config.files ){
+    console.log(`loading wave file:${file.path}`);
     let source = await audioAnalyser.load(file.path);
     // calc amp
     let max = 0;
@@ -147,16 +111,14 @@ window.addEventListener('load', async ()=>{
       source.amp = 128 / max;
   
     }
-    files.waves.push(source);
+    config.waves.push(source);
   }
   
-  waveLength = files.waves[0].data[0].length;
-  SAMPLE_RATE = files.waves[0].samplesPerSec;
+  waveLength = config.waves[0].data[0].length;
+  SAMPLE_RATE = config.waves[0].samplesPerSec;
 
-  var qstr = new QueryString();
-  var params = qstr.parse(window.location.search.substr(1));
-  var preview = params.preview == false;
-  const fps = parseFloat(params.framerate);
+  var preview = config.preview;
+  const fps = parseFloat(config.framerate);
   console.log('framerate:',fps);
   const WIDTH = 1920 , HEIGHT = 1080;
   const canvas = document.createElement('canvas');
@@ -184,7 +146,8 @@ window.addEventListener('load', async ()=>{
   time = 0;//-WAVE_WIDTH / (SAMPLE_RATE * 2);//(60420 - 1500) /1000 ;//0.0;
   var frameNo = 0;
 //  var endTime = 60.0 * 4.0 + 30.0;
-  var endTime = 60.0 * 4.0 + 36.0;
+  var endTime = parseInt(config.songLengthSec,10);
+//  var endTime = 60.0 * 3.0 + 37.0;
   var frameSpeed = 1.0 / fps; 
   var delta = frameSpeed;
   var previewCount = 0;
@@ -202,7 +165,8 @@ window.addEventListener('load', async ()=>{
 
   //let renderPass = new THREE.RenderPass(scene, camera);
   // var animMain = new SFRydeen(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE);
-  var animMain = new SFShaderPass4(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,4,files.waves);
+//  var animMain = new SFShaderPass4(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,files.waves.length,4,files.waves);
+  var animMain = new SFShaderPass4(WIDTH,HEIGHT,fps,endTime,SAMPLE_RATE,config.waves.length,3,config.waves);
 //  animMain.waves = files.waves;
 //  var animMain = new SFGpGpuPass(WIDTH,HEIGHT,renderer);
   animMain.renderToScreen = false;

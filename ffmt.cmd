@@ -1,3 +1,4 @@
+
 @echo off
 @setlocal enabledelayedexpansion
 
@@ -7,7 +8,7 @@ set ver=85
 set output=technopolis.mp4
 set play=0
 
-rem ƒpƒ‰ƒ[ƒ^ƒ`ƒFƒbƒN
+rem ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½`ï¿½Fï¿½bï¿½N
 :check
 if "%1"=="" goto end-check
 
@@ -27,7 +28,7 @@ if "%1"=="/fps" (
   if Not "%2"=="" (
     set fps=%2
   ) else (
-    @echo ƒpƒ‰ƒ[ƒ^ƒGƒ‰[
+    @echo ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½[
     exit /b 1
   )
   shift
@@ -39,7 +40,7 @@ if "%1"=="/ver" (
   if Not "%2"=="" (
     set ver=%2
   ) else (
-    @echo ƒpƒ‰ƒ[ƒ^ƒGƒ‰[
+    @echo ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½[
     exit /b 1
   )
   shift
@@ -51,7 +52,7 @@ if "%1"=="/output" (
   if Not "%2"=="" (
     set output=%2
   ) else (
-    @echo ƒpƒ‰ƒ[ƒ^ƒGƒ‰[
+    @echo ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½[
     exit /b 1
   )
   shift
@@ -59,7 +60,7 @@ if "%1"=="/output" (
   goto check
 )
 
-@echo ƒpƒ‰ƒ[ƒ^ƒGƒ‰[
+@echo ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Gï¿½ï¿½ï¿½[
 exit /b 1
 :end-check
 
