@@ -7,7 +7,7 @@
  //import * as THREE from 'three';
 
  let vertexShader =
-  `#version 300 es 
+  `//#version 300 es 
 out vec2 vUv;
 void main()	{
 		vUv = uv;
@@ -16,7 +16,7 @@ void main()	{
   }
 `;
 let fragmentShader =
-  `#version 300 es
+  `//#version 300 es
 precision highp float;
 precision highp int;
 
@@ -27,7 +27,7 @@ uniform float amp[CHANNEL_INT];
 uniform float amp_current;
 
 in vec2 vUv;
-out vec4 color;
+// out vec4 pc_fragColor;
 
 void main()	{
 
@@ -41,7 +41,7 @@ void main()	{
     float y = floor(vUv.y * CHANNEL * 2.0) / (CHANNEL * 2.0) + v;
     c = 1.0 - smoothstep(0.0003,0.001,abs(vUv.y - y));
   }
-  color = vec4(clamp(c + v2,0.0,1.0),c,c,1.0);
+  pc_fragColor = vec4(clamp(c + v2,0.0,1.0),c,c,1.0);
 }
 `;
 

@@ -7,7 +7,7 @@
  //import * as THREE from 'three';
 
  let vertexShader =
-  `#version 300 es 
+  `// #version 300 es 
 out vec2 vUv;
 void main()	{
 		vUv = uv;
@@ -16,7 +16,7 @@ void main()	{
   }
 `;
 let fragmentShader =
-  `#version 300 es
+  `// #version 300 es
 precision highp float;
 precision highp int;
 
@@ -28,7 +28,7 @@ uniform float amp[CHANNEL_INT];
 uniform float amp_current;
 
 in vec2 vUv;
-out vec4 color;
+//out vec4 pc_fragColor;
 
 void main()	{
 
@@ -83,7 +83,7 @@ void main()	{
 //   //float b = max(r1,l1);
 //   //cl = clamp(cl + b,0.0,1.0);
 //   // cr = clamp(cr + b,0.0,1.0);
-  color = (channel & 0x1) == 0 ? vec4(cl,cr,0.0,1.0) : vec4(cl,0.0,cr,1.0);
+  pc_fragColor = (channel & 0x1) == 0 ? vec4(cl,cr,0.0,1.0) : vec4(cl,0.0,cr,1.0);
 }
 `;
 

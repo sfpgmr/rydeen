@@ -1,10 +1,11 @@
 {
   "name":"rydeen",
-  "songLengthSec":"276",
+  "songLengthSec":"264",
+  "fadeTime":7,
   "waves":[],
   "mainDataFile":"./media/separate/Rydeen-001.wav",
   "framerate":60,
-  "ver":"99",
+  "ver":"104",
   "songName":"Rydeen",
   "outputPath":"./media/rydeen.mp4",
   "files":[

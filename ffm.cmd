@@ -6,11 +6,11 @@ set fps=60
 set ver=96
 set output=rydeen.mp4
 set play=0
-set datapath=./rydeen.json
+set configpath=./rydeen.json
 set songname=Rydeen
 set songlengthsec=276
 
-rem パラメータチェック
+rem ?p?????[?^?`?F?b?N
 :check
 if "%1"=="" goto end-check
 
@@ -30,7 +30,7 @@ if "%1"=="/fps" (
   if Not "%2"=="" (
     set fps=%2
   ) else (
-    @echo パラメータエラー
+    @echo ?p?????[?^?G???[
     exit /b 1
   )
   shift
@@ -42,7 +42,7 @@ if "%1"=="/ver" (
   if Not "%2"=="" (
     set ver=%2
   ) else (
-    @echo パラメータエラー
+    @echo ?p?????[?^?G???[
     exit /b 1
   )
   shift
@@ -54,7 +54,7 @@ if "%1"=="/output" (
   if Not "%2"=="" (
     set output=%2
   ) else (
-    @echo パラメータエラー
+    @echo ?p?????[?^?G???[
     exit /b 1
   )
   shift
@@ -62,11 +62,11 @@ if "%1"=="/output" (
   goto check
 )
 
-if "%1"=="/datapath" (
+if "%1"=="/configpath" (
   if Not "%2"=="" (
-    set datapath=%2
+    set configpath=%2
   ) else (
-    @echo パラメータエラー
+    @echo ?p?????[?^?G???[
     exit /b 1
   )
   shift
@@ -78,7 +78,7 @@ if "%1"=="/songname" (
   if Not "%2"=="" (
     set songname=%2
   ) else (
-    @echo パラメータエラー
+    @echo ?p?????[?^?G???[
     exit /b 1
   )
   shift
@@ -90,7 +90,7 @@ if "%1"=="/songlengthsec" (
   if Not "%2"=="" (
     set songlengthsec=%2
   ) else (
-    @echo パラメータエラー
+    @echo ?p?????[?^?G???[
     exit /b 1
   )
   shift
@@ -98,17 +98,17 @@ if "%1"=="/songlengthsec" (
   goto check
 )
 
-@echo パラメータエラー
+@echo ?p?????[?^?G???[
 exit /b 1
 :end-check
 
 call rollup -c .\rollup.config.js
 
 if !generate! == 1 (
-rem   del /q temp\*.*
+   del /q temp\*.*
 )
 
-call electron . -datapath !datapath! -generate !generate!
+call electron . -configpath !configpath! -generate !generate!
  
 
 

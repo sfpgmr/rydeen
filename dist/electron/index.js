@@ -6818,7 +6818,7 @@ ReflectContext.prototype = {
  //import * as THREE from 'three';
 
  let vertexShader$1 =
-  `#version 300 es 
+  `//#version 300 es 
 out vec2 vUv;
 void main()	{
 		vUv = uv;
@@ -6827,7 +6827,7 @@ void main()	{
   }
 `;
 let fragmentShader$1 =
-  `#version 300 es
+  `//#version 300 es
 precision highp float;
 precision highp int;
 
@@ -6838,7 +6838,7 @@ uniform float amp[CHANNEL_INT];
 uniform float amp_current;
 
 in vec2 vUv;
-out vec4 color;
+//out vec4 pc_fragColor;
 
 void main()	{
   // vec2 p = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
@@ -6849,7 +6849,7 @@ void main()	{
 
 
   if(channel == 23) {
-    color = vec4(0.0,0.0,0.0,1.0);
+    pc_fragColor = vec4(0.0,0.0,0.0,1.0);
     return;
   }
 
@@ -6862,7 +6862,7 @@ void main()	{
 
 
   if(abs(v - 0.5) < (0.0025 * amplitude)) {
-    color = vec4(0.0,0.0,0.0,1.0);
+    pc_fragColor = vec4(0.0,0.0,0.0,1.0);
     return;
   }
 
@@ -6878,15 +6878,15 @@ void main()	{
 
   if((yi & 0x1) == 0) {
     if((xsi & 0x1) == 0) {
-      color = vec4(c,0.0,0.0,1.0);
+      pc_fragColor = vec4(c,0.0,0.0,1.0);
     } else {
-      color = vec4(0.0,c,0.0,1.0);
+      pc_fragColor = vec4(0.0,c,0.0,1.0);
     }
   } else {
     if((xsi & 0x1) == 0) {
-      color = vec4(0.0,0.0,c,1.0);
+      pc_fragColor = vec4(0.0,0.0,c,1.0);
     } else {
-      color = vec4(c,0.0,0.0,1.0);
+      pc_fragColor = vec4(c,0.0,0.0,1.0);
     }
   }
 }

@@ -1,5 +1,5 @@
 set cdir=%CD%
-cd /d m:\pj\rydeen\media\separate
+cd /d d:\pj\rydeen\media\separate
 set rate=16000
 set codec=pcm_u8
 ffmpeg -i behind_002-002.wav -ar %rate% -acodec %codec% bm002.wav -y
