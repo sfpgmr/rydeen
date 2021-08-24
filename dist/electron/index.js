@@ -6822,6 +6822,7 @@ ReflectContext.prototype = {
 out vec2 vUv;
 void main()	{
 		vUv = uv;
+    vUv.x = 1.0 - vUv.x;
     //gl_Position =  projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     gl_Position = vec4( position, 1.0 );
   }
@@ -6930,7 +6931,7 @@ class SFShaderPass4 extends THREE.Pass {
     this.uniforms.resolution.value.y = height;
 
     for(let i = 0;i < channel;++i){
-      this.uniforms.amp.value[i] = this.waves[i].amp;
+      this.uniforms.amp.value[i] = this.waves[channel - i - 1].amp;
     }
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
@@ -6975,7 +6976,7 @@ class SFShaderPass4 extends THREE.Pass {
     if(waveCount < 0) waveCount = 0;
     for(let ch = 0,chend = this.channel;ch < chend;++ch){
       const chParam = [];
-      const wave = this.waves[ch];
+      const wave = this.waves[this.channel - 1 - ch];
       const wlength = wave.data[0].length;
       for(let wch = 0,wchEnd = wave.data.length;wch < wchEnd;++wch){
         const w = wave.data[wch];
@@ -7027,7 +7028,7 @@ class SFShaderPass4 extends THREE.Pass {
       }
 
       {
-        const wdata = wave.data[0];
+        const wdata = wave.data[1];
         const buffer = this.audioBuffer;
         const startPos = chParam[0];
         const waveWidth = this.waveWidth;
@@ -7038,9 +7039,10 @@ class SFShaderPass4 extends THREE.Pass {
         if(wcntLEnd > wlength) wcntLEnd = wlength;
   
         let bufferpos = waveWidth * ch * 2;
-
+        let count = 1;
         while(wcntL < wcntLEnd){
-          buffer[bufferpos] = wdata[wcntL];
+          buffer[bufferpos] = wdata[wcntLEnd - count];
+          ++count;
           ++wcntL;
           ++bufferpos;
         }
@@ -7053,7 +7055,7 @@ class SFShaderPass4 extends THREE.Pass {
 
       
       {
-        const wdata = wave.data[1];
+        const wdata = wave.data[0];
         const buffer = this.audioBuffer;
         const startPos = chParam[1];
         const waveWidth = this.waveWidth;
@@ -7064,8 +7066,10 @@ class SFShaderPass4 extends THREE.Pass {
         if(wcntLEnd > wlength) wcntLEnd = wlength;
   
         let bufferpos = waveWidth * (ch * 2 + 1);
+        let count = 1;
         while(wcntL < wcntLEnd){
-          buffer[bufferpos] = wdata[wcntL];
+          buffer[bufferpos] = wdata[wcntLEnd - count];
+          ++count;
           ++wcntL;
           ++bufferpos;
         }

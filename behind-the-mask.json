@@ -1,14 +1,39 @@
 {
-    "songLengthSec":217,
+    "songLengthSec":219,
+    "fadeTime":10,
     "waves":[],
+    "mainDataFile":"./media/separate/Behind-001.wav",
+    "framerate":60,
+    "ver":"24",
+    "songName":"BEHIND THE MASK",
+    "outputPath":"./media/behind.mp4",
     "files":[
-     {"path":"./media/separate/bm002.wav","amp":0.0},
-     {"path":"./media/separate/bm003.wav","amp":0.0},
-     {"path":"./media/separate/bm004.wav","amp":0.0},
-     {"path":"./media/separate/bm005.wav","amp":0.0},
-     {"path":"./media/separate/bm006.wav","amp":0.0},
-     {"path":"./media/separate/bm007.wav","amp":0.0},
-     {"path":"./media/separate/bm008.wav","amp":0.0},
-     {"path":"./media/separate/bm009.wav","amp":0.0},
-     {"path":"./media/separate/bm010.wav","amp":0.0}
-    ]}
+     {"path":"./media/separate/bm002.wav","amp":0.0,"name":"Synth Seq"},
+     {"path":"./media/separate/bm003.wav","amp":0.0,"name":"Synth Chord A"},
+     {"path":"./media/separate/bm004.wav","amp":0.0,"name":"Synth Chord A1"},
+
+     {"path":"./media/separate/bm005.wav","amp":0.0,"name":"SynthChord A2"},
+     {"path":"./media/separate/bm006.wav","amp":0.0,"name":"SynthChord B"},
+     {"path":"./media/separate/bm007.wav","amp":0.0,"name":"Synth Bass"},
+
+     {"path":"./media/separate/bm008.wav","amp":0.0,"name":"Hi-Hat"},
+     {"path":"./media/separate/bm009.wav","amp":0.0,"name":"Synth Bass Drum"},
+     {"path":"./media/separate/bm010.wav","amp":0.0,"name":"Snare"},
+
+     {"path":"./media/separate/bm011.wav","amp":0.0,"name":"Synth Snare 1"},
+     {"path":"./media/separate/bm001.wav","amp":0.0,"name":"Master Mix"},
+     {"path":"./media/separate/bm012.wav","amp":0.0,"name":"Synth Snare 2"},
+
+     {"path":"./media/separate/bm013.wav","amp":0.0,"name":"Synth Main A"},
+     {"path":"./media/separate/bm014.wav","amp":0.0,"name":"Synth Main B"},
+     {"path":"./media/separate/bm015.wav","amp":0.0,"name":"Synth Main B1"},
+
+     {"path":"./media/separate/bm016.wav","amp":0.0,"name":"Synth Main C"},
+     {"path":"./media/separate/bm017.wav","amp":0.0,"name":"Synth Main D"},
+     {"path":"./media/separate/bm018.wav","amp":0.0,"name":"Synth Main E"},
+
+     {"path":"./media/separate/bm019.wav","amp":0.0,"name":"Synth Vocoder"},
+     {"path":"./media/separate/bm020.wav","amp":0.0,"name":"Synth SE 1"},
+     {"path":"./media/separate/bm021.wav","amp":0.0,"name":"Synth SE 2"}
+     ]
+}

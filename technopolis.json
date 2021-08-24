@@ -5,31 +5,39 @@
   "mainDataFile":"./media/separate/technopolis-001.wav",
   "framerate":60,
   "fadeTime":12,
-  "ver":"18",
+  "ver":"20",
   "songName":"TECHNOPOLIS",
   "outputPath":"./media/technopolis.mp4",
     "files":[
-      {"path":"./media/separate/tp023.wav","amp":0.0},
-      {"path":"./media/separate/tp022.wav","amp":0.0},
-      {"path":"./media/separate/tp021.wav","amp":0.0},
-      {"path":"./media/separate/tp020.wav","amp":0.0}, 
-      {"path":"./media/separate/tp019.wav","amp":0.0},
-      {"path":"./media/separate/tp018.wav","amp":0.0},
-      {"path":"./media/separate/tp017.wav","amp":0.0},
-      {"path":"./media/separate/tp016.wav","amp":0.0},
-      {"path":"./media/separate/tp015.wav","amp":0.0}, 
-      {"path":"./media/separate/tp014.wav","amp":0.0},
-      {"path":"./media/separate/tp013.wav","amp":0.0},
-      {"path":"./media/separate/tp012.wav","amp":0.0},
-      {"path":"./media/separate/tp011.wav","amp":0.0},
-      {"path":"./media/separate/tp010.wav","amp":0.0}, 
-      {"path":"./media/separate/tp009.wav","amp":0.0},
-      {"path":"./media/separate/tp008.wav","amp":0.0},
-      {"path":"./media/separate/tp007.wav","amp":0.0},
-      {"path":"./media/separate/tp006.wav","amp":0.0},
-      {"path":"./media/separate/tp005.wav","amp":0.0}, 
-      {"path":"./media/separate/tp004.wav","amp":0.0},
-      {"path":"./media/separate/tp003.wav","amp":0.0},
-      {"path":"./media/separate/tp002.wav","amp":0.0},
-      {"path":"./media/separate/tp001.wav","amp":0.0}
+      {"path":"./media/separate/tp004.wav","name":"Voice","amp":0.0},
+      {"path":"./media/separate/tp002.wav","name":"Synth Bass","amp":0.0},
+      {"path":"./media/separate/tp003.wav","name":"Slap Bass","amp":0.0},
+
+      {"path":"./media/separate/tp005.wav","name":"Synth Vocoder","amp":0.0}, 
+      {"path":"./media/separate/tp019.wav","name":"Synth D-3","amp":0.0},
+      {"path":"./media/separate/tp024.wav","name":"Drums","amp":0.0},
+
+      {"path":"./media/separate/tp006.wav","name":"Synth A-1","amp":0.0},
+      {"path":"./media/separate/tp007.wav","name":"Synth A-2","amp":0.0},
+      {"path":"./media/separate/tp008.wav","name":"Synth A-3","amp":0.0},
+
+      {"path":"./media/separate/tp009.wav","name":"Synth B-1","amp":0.0},
+      {"path":"./media/separate/tp010.wav","name":"Synth B-2","amp":0.0}, 
+      {"path":"./media/separate/tp011.wav","name":"Synth B-3","amp":0.0},
+
+      {"path":"./media/separate/tp012.wav","name":"Synth B-4","amp":0.0},
+      {"path":"./media/separate/tp001.wav","name":"Master Mix","amp":0.0},
+      {"path":"./media/separate/tp013.wav","name":"CHORD","amp":0.0},
+
+      {"path":"./media/separate/tp015.wav","name":"Synth D-1","amp":0.0}, 
+      {"path":"./media/separate/tp014.wav","name":"Synth C","amp":0.0},
+      {"path":"./media/separate/tp016.wav","name":"Synth D-2","amp":0.0},
+
+      {"path":"./media/separate/tp017.wav","name":"Synth D-2A","amp":0.0},
+      {"path":"./media/separate/tp023.wav","name":"Synth SE","amp":0.0},
+      {"path":"./media/separate/tp018.wav","name":"Synth D-2-1","amp":0.0},
+
+      {"path":"./media/separate/tp022.wav","name":"Synth E-3","amp":0.0},
+      {"path":"./media/separate/tp020.wav","name":"Synth E-1","amp":0.0}, 
+      {"path":"./media/separate/tp021.wav","name":"Synth E-2","amp":0.0}
     ]}

@@ -1,33 +1,39 @@
 {
   "name":"rydeen",
   "songLengthSec":"264",
-  "fadeTime":7,
+  "fadeTime":5,
   "waves":[],
   "mainDataFile":"./media/separate/Rydeen-001.wav",
   "framerate":60,
-  "ver":"104",
-  "songName":"Rydeen",
+  "ver":"105",
+  "songName":"RYDEEN",
   "outputPath":"./media/rydeen.mp4",
   "files":[
-   {"path":"./media/separate/rs001.wav","amp":0.0},
-   {"path":"./media/separate/rs021.wav","amp":0.0},
-   {"path":"./media/separate/rs020.wav","amp":0.0},
-   {"path":"./media/separate/rs019.wav","amp":0.0},
-   {"path":"./media/separate/rs018.wav","amp":0.0},
-   {"path":"./media/separate/rs017.wav","amp":0.0},
-   {"path":"./media/separate/rs016.wav","amp":0.0},
-   {"path":"./media/separate/rs015.wav","amp":0.0},
-   {"path":"./media/separate/rs014.wav","amp":0.0},
-   {"path":"./media/separate/rs013.wav","amp":0.0},
-   {"path":"./media/separate/rs012.wav","amp":0.0},
-   {"path":"./media/separate/rs011.wav","amp":0.0},
-   {"path":"./media/separate/rs010.wav","amp":0.0},
-   {"path":"./media/separate/rs009.wav","amp":3.0},
-    {"path":"./media/separate/rs008.wav","amp":0.0},
-    {"path":"./media/separate/rs007.wav","amp":0.0},
-    {"path":"./media/separate/rs006.wav","amp":0.0}, 
-    {"path":"./media/separate/rs005.wav","amp":0.0},
-    {"path":"./media/separate/rs004.wav","amp":0.0},
-    {"path":"./media/separate/rs003.wav","amp":0.0},
-    {"path":"./media/separate/rs002.wav","amp":0.0}
-  ]}
+    {"path":"./media/separate/rs003.wav","amp":0.0,"name":"Syn Perc  L"},
+    {"path":"./media/separate/rs004.wav","amp":0.0,"name":"Drums"},
+    {"path":"./media/separate/rs002.wav","amp":0.0,"name":"Syn Perc  R"},
+
+    {"path":"./media/separate/rs005.wav","amp":0.0,"name":"Syn Drum A"},
+    {"path":"./media/separate/rs007.wav","amp":0.0,"name":"Syn Seq A"}, 
+    {"path":"./media/separate/rs006.wav","amp":0.0,"name":"Syn Drum B"}, 
+
+    {"path":"./media/separate/rs008.wav","amp":0.0,"name":"Syn Seq B"}, 
+    {"path":"./media/separate/rs009.wav","amp":0.0,"name":"Syn Bass A"}, 
+    {"path":"./media/separate/rs010.wav","amp":0.0,"name":"Syn Bass B"}, 
+
+    {"path":"./media/separate/rs011.wav","amp":0.0,"name":"Syn Chord A"}, 
+    {"path":"./media/separate/rs001.wav","amp":0.0,"name":"Master Mix"},
+    {"path":"./media/separate/rs012.wav","amp":0.0,"name":"Syn Chord B"}, 
+
+    {"path":"./media/separate/rs014.wav","amp":0.0,"name":"Syn Lead B"}, 
+    {"path":"./media/separate/rs013.wav","amp":0.0,"name":"Syn Lead A"}, 
+    {"path":"./media/separate/rs015.wav","amp":0.0,"name":"Syn Strings A"}, 
+
+    {"path":"./media/separate/rs016.wav","amp":0.0,"name":"Syn Strings B"}, 
+    {"path":"./media/separate/rs018.wav","amp":0.0,"name":"Syn Piccolo B"}, 
+    {"path":"./media/separate/rs017.wav","amp":0.0,"name":"Syn Piccolo A"}, 
+
+    {"path":"./media/separate/rs020.wav","amp":0.0,"name":"Syn SE B (Bomb)"}, 
+    {"path":"./media/separate/rs019.wav","amp":0.0,"name":"Syn SE A (Horse)"}, 
+    {"path":"./media/separate/rs021.wav","amp":0.0,"name":"Syn SE C (Beam)"} 
+    ]}

@@ -22,7 +22,14 @@ let config;
 function encode(){
   return  new Promise((resolve, reject) => {
      console.log('now encoding movie using ffmpeg ...');
-     child_process.exec(`ffmpeg  -framerate ${config.framerate} -i ./temp/out%06d.jpg -i ${config.mainDataFile} -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.5:boxborderw=5:text='YMO - ${config.songName} (${config.ver}) performed by SFPG',fade=t=out:st=${config.songLengthSec-(config.fadeTime || 13)}:d=4[out]" -map "[out]":v -map 1:a -t ${config.songLengthSec} -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 6000k -r:a 96000 -b:v 30M -minrate 30M -maxrate 30M -qmin 1 -qmax 20 -movflags faststart ${config.outputPath} -y -loglevel fatal`, (error, stdout, stderr) => {
+     let caption = '';
+     for(let ch = 0;ch < config.files.length;++ch){
+       let x = (ch % 3) * 1920 / 3;
+       let y = ((ch / 3) | 0) * 1080 / (config.files.length / 3);
+       caption += `drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=${x}:y=${y}:fontsize=13:box=0:text='${ch}:${config.files[ch].name}',`;
+     }
+
+     child_process.exec(`ffmpeg  -framerate ${config.framerate} -i ./temp/out%06d.jpg -i ${config.mainDataFile} -filter_complex "[0:v]drawtext=fontfile=./media/'YuGothic-Bold.ttf':fontcolor=white:x=30:y=30:fontsize=32: box=1: boxcolor=black@0.8:boxborderw=5:text='YMO - ${config.songName} （${config.ver}） by SFPG',${caption}fade=t=out:st=${config.songLengthSec-(config.fadeTime || 13)}:d=4[out]" -map "[out]":v -map 1:a -t ${config.songLengthSec} -s 1920x1080 -aspect 16:9 -pix_fmt yuv420p -c:v h264_nvenc -b:a 6000k -r:a 96000 -b:v 30M -minrate 30M -maxrate 30M -qmin 1 -qmax 20 -movflags faststart ${config.outputPath} -y -loglevel fatal`, (error, stdout, stderr) => {
      if (error) {
        console.log(error);
        reject(error);
