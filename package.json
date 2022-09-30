@@ -30,7 +30,7 @@
     "rollup-plugin-node-resolve": "^4.2.4"
   },
   "dependencies": {
-    "d3": "^5.16.0",
+    "d3": "^7.6.1",
     "electron": "^11.4.9",
     "eventemitter3": "^2.0.3",
     "midifile": "^1.0.4",
